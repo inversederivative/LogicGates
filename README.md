@@ -2,6 +2,8 @@
 
 ---
 
+<img src="images/LogicGates.png">
+
 ### Introduction
 
 After many years of tinkering with Fallout 4 mods, I came across the mod Complex Logic Circuits, which is a mod built 
