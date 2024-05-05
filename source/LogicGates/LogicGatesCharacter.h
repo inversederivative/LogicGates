@@ -53,14 +53,32 @@ class ALogicGatesCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))
 	UInputAction* PowerToggleAction;
 
-	/** Reference to the current node in radius*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))
+	UInputAction* ConnectFromOutputXAction;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))
+	UInputAction* ConnectToInputXAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))
+	UInputAction* ConnectToInputYAction;
+
+
+	
+	/** Reference to the current node in radius*/
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Power", meta = (AllowPrivateAccess = "true"))
 	AAbstractNode* CurrentNode;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Power", meta = (AllowPrivateAccess = "true"))
+	AAbstractNode* LastOutputNode;
+
+	bool ConnectedToHand;
 	
 public:
 	ALogicGatesCharacter();
 
 	void SetCurrentNode(AAbstractNode* currentNode);
+
+	void SetLastOutputNode(AAbstractNode* lastOutputNode);
 
 protected:
 
@@ -72,7 +90,15 @@ protected:
 
 	UFUNCTION(BlueprintCallable, Category = "Power")
 	void ToggleCurrentPowerSource();
+
+	UFUNCTION(BlueprintCallable, Category = "Power")
+	void ConnectFromOutputX();
 	
+	UFUNCTION(BlueprintCallable, Category = "Power")
+	void ConnectToInputX();
+
+	UFUNCTION(BlueprintCallable, Category = "Power")
+	void ConnectToInputY();
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	
@@ -97,5 +123,7 @@ public:
 
 	/** Returns the CurrentNode */
 	FORCEINLINE AAbstractNode* GetCurrentNode() const {return CurrentNode;}
+
+	FORCEINLINE AAbstractNode* GetLastOutputNode() const {return LastOutputNode;}
 };
 

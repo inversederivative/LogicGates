@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "CableComponent.h"
+
 #include "LogicGates/Interfaces/NodeInterface.h"
 #include "AbstractNode.generated.h"
 
@@ -33,6 +35,18 @@ public:
 		}
 	}
 
+	// Getters and Setters for Output X and Y
+
+	virtual UCableComponent* GetOutputCableX() const
+	{
+		return OutputCableX;
+	}
+	
+	virtual UCableComponent* GetOutputCableY() const
+	{
+		return OutputCableY;
+	}
+	
 	std::list<IObserver*> GetObservers()
 	{
 		return observers_;
@@ -42,11 +56,29 @@ protected:
 
 	std::list<IObserver*> observers_;
 
+	// TODO: Make these private, and create abstract Getters and Setters
+	// TODO: Find a way to make them private? I set them in a child class, so maybe they need to be protected.
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cable Components", meta = (AllowPrivateAccess = "true"))
+	UCableComponent* OutputCableX;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cable Components", meta = (AllowPrivateAccess = "true"))
+	UCableComponent* OutputCableY;
+	
+	
+	virtual void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) PURE_VIRTUAL(AAbstractNode::OnOverlapBegin,);
+
+	virtual void OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) PURE_VIRTUAL(AAbstractNode::OnOverlapEnd,);
+	
+
 private:
 	
 	UPROPERTY
 	(VisibleAnywhere, BlueprintReadOnly, Category = "Node Properties", meta = (AllowPrivateAccess = "true"))
 	UStaticMeshComponent* NodeMesh;
+
+
+
 	
 	eLogicState OutputState;
 };
