@@ -88,14 +88,17 @@ void ADisplayOutput::SetInput(AAbstractNode *input) {
 	if (currentState == DISABLED)
 	{
 		ScreenMesh->SetMaterial(0, DisabledMaterial);
+		InputPort->SetMaterial(0, DisabledMaterial);
 	}
 	if (currentState == OFF)
 	{
 		ScreenMesh->SetMaterial(0, OffMaterial);
+		InputPort->SetMaterial(0, OffMaterial);
 	}
 	if (currentState == ON)
 	{
 		ScreenMesh->SetMaterial(0, OnMaterial);
+		InputPort->SetMaterial(0, OnMaterial);
 	}
 	
 	ADisplayOutput::Update(currentState);
@@ -113,14 +116,17 @@ void ADisplayOutput::Update(eLogicState state) {
 	if (currentState == DISABLED)
 	{
 		ScreenMesh->SetMaterial(0, DisabledMaterial);
+		InputPort->SetMaterial(0, DisabledMaterial);
 	}
 	if (currentState == OFF)
 	{
 		ScreenMesh->SetMaterial(0, OffMaterial);
+		InputPort->SetMaterial(0, OffMaterial);
 	}
 	if (currentState == ON)
 	{
 		ScreenMesh->SetMaterial(0, OnMaterial);
+		InputPort->SetMaterial(0, OnMaterial);
 	}
 	
 	Notify();
