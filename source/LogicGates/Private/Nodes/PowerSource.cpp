@@ -8,10 +8,10 @@
 
 APowerSource::APowerSource()
 {
+	SetHasOutputNode(true);
+	
 	PowerSourceSceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("PowerSource SceneComponent"));
 	RootComponent = PowerSourceSceneComponent;
-
-	
 	
 	PowerSourceMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PowerSourceMesh"));
 	PowerSourceMesh->SetupAttachment(RootComponent);
@@ -25,13 +25,13 @@ APowerSource::APowerSource()
 	ConnectionMesh->SetupAttachment(RootComponent);
 	CableConnector = CreateDefaultSubobject<USceneComponent>("CableConnector");
 	CableConnector->SetupAttachment(ConnectionMesh);
-
+	
 	OutputCableX = CreateDefaultSubobject<UCableComponent>(TEXT("PowerSource Output"));
 	// Attach To Component comes from the USceneComponent class. 
 	OutputCableX->AttachToComponent(CableConnector, FAttachmentTransformRules::KeepWorldTransform);
 	// Setup Cable's Initial End Location
 	// NOTE: We have to add the space, because the component automatically has a space in the engine.
-	//      May as well name with spaces as well, but that's for later.
+	//      May as well name with spaces as well, but that's for later. ????????
 	OutputCableX->SetAttachEndTo(this, "Cable Connector");
 	//OutputCableX->SetAttachEndToComponent(CableConnector); // Attaches cable end to self.
 
@@ -60,11 +60,11 @@ APowerSource::APowerSource()
 	CollisionSphere->SetupAttachment(RootComponent);
 	
 	state_ = DISABLED;
-	InteractionDistance = 100.0f; // Set the interaction distance
 }
 
 // Sets default values
 // Do I even use this constructor anywhere?
+// TODO: legacy code from library project. Remove overloaded constructors across the board.
 APowerSource::APowerSource(eLogicState state)
 {
 	APowerSource();
@@ -82,33 +82,37 @@ void APowerSource::BeginPlay()
 
 void APowerSource::ChangeState(eLogicState state) {
 	state_ = state;
-
-	// Handle Color changes
-	if (state == DISABLED)
+	if (!IsNodeForOtherNodes)
 	{
-		UE_LOG(LogTemp, Display, TEXT("****The state was changed. The current state is: Disabled"));
-		ConnectionMesh->SetMaterial(0, DisabledMaterial);
-		AnimateButtonPosition();
-	}
-	if (state == OFF)
-	{
+		// Handle Color changes
+		if (state == DISABLED)
+		{
+			UE_LOG(LogTemp, Display, TEXT("****The state was changed. The current state is: Disabled"));
+			ConnectionMesh->SetMaterial(0, DisabledMaterial);
+			AnimateButtonPosition();
+		}
+		if (state == OFF)
+		{
 		
-		UE_LOG(LogTemp, Display, TEXT("****The state was changed. The current state is: Off"));
-		ConnectionMesh->SetMaterial(0, OffMaterial);
-		AnimateButtonPosition();
+			UE_LOG(LogTemp, Display, TEXT("****The state was changed. The current state is: Off"));
+			ConnectionMesh->SetMaterial(0, OffMaterial);
+			AnimateButtonPosition();
+		}
+		if (state == ON)
+		{
+			UE_LOG(LogTemp, Display, TEXT("****The state was changed. The current state is: On"));
+			ConnectionMesh->SetMaterial(0, OnMaterial);
+			AnimateButtonPosition();
+		}
 	}
-	if (state == ON)
-	{
-		UE_LOG(LogTemp, Display, TEXT("****The state was changed. The current state is: On"));
-		ConnectionMesh->SetMaterial(0, OnMaterial);
-		AnimateButtonPosition();
-	}
+	
 	Notify();
 }
 
 // Perhaps it'd be better simply have a priority. On, Off, and Disabled.
 // Then if we're in Disabled, we go to on, if we're off we go to disabled, etc. In end effect
 // this is what we already have.
+// TODO: Remove ToggleState function. ChangeState seems to do the trick...
 void APowerSource::ToggleState() {
 	// We need to then check if disabled
 	if (state_ != DISABLED)
@@ -245,6 +249,7 @@ void APowerSource::SetupMaterials()
 }
 
 // Function to animate the position of the button mesh
+// TODO: Remove this function. We don't need this animation, and it doesn't work anyways.
 void APowerSource::AnimateButtonPosition()
 {
     // Define animation parameters
@@ -293,9 +298,4 @@ void APowerSource::AnimateButtonPosition()
             ButtonMesh->SetRelativeLocation(ReverseTargetPosition);
         }, AnimationDuration, false);
     }, 0.0f, false);
-}
-
-UCableComponent* APowerSource::GetOutputCableX() const
-{
-	return OutputCableX;
 }

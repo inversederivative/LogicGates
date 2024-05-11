@@ -55,6 +55,10 @@ class ALogicGatesCharacter : public ACharacter
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))
 	UInputAction* ConnectFromOutputXAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))
+	UInputAction* ConnectFromOutputYAction;
+	
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))
 	UInputAction* ConnectToInputXAction;
@@ -62,7 +66,8 @@ class ALogicGatesCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))
 	UInputAction* ConnectToInputYAction;
 
-
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))
+	UInputAction* ConnectToInputZAction;
 	
 	/** Reference to the current node in radius*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Power", meta = (AllowPrivateAccess = "true"))
@@ -72,6 +77,8 @@ class ALogicGatesCharacter : public ACharacter
 	AAbstractNode* LastOutputNode;
 
 	bool ConnectedToHand;
+
+	bool IsFromOutputY;
 	
 public:
 	ALogicGatesCharacter();
@@ -93,26 +100,24 @@ protected:
 
 	UFUNCTION(BlueprintCallable, Category = "Power")
 	void ConnectFromOutputX();
+
+	UFUNCTION(BlueprintCallable, Category = "Power")
+	void ConnectFromOutputY();
 	
 	UFUNCTION(BlueprintCallable, Category = "Power")
 	void ConnectToInputX();
 
 	UFUNCTION(BlueprintCallable, Category = "Power")
 	void ConnectToInputY();
+
+	UFUNCTION(BlueprintCallable, Category = "Power")
+	void ConnectToInputZ();
+	
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	
 	// To add mapping context
 	virtual void BeginPlay();
-
-	// Get collision Query Params for Ray Tracing
-	//FCollisionQueryParams GetCollisionQueryParameters();
-
-	// // Declare function to perform ray tracing
-	// void PerformRayTrace();
-	//
-	// // Declare function to trigger ray tracing
-	// void TriggerRayTrace();
 
 public:
 	/** Returns CameraBoom subobject **/

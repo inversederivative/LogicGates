@@ -4,12 +4,14 @@
 #include "Nodes/DisplayOutput.h"
 
 #include "LogicGates/LogicGatesCharacter.h"
+#include "Nodes/Adders/FullAdder.h"
 
  ADisplayOutput::ADisplayOutput()
 {
+ 	
 	// Set default mesh
 
- 	DisplaySceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("PowerSource SceneComponent"));
+ 	DisplaySceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Display SceneComponent"));
  	RootComponent = DisplaySceneComponent;
  	
 	DisplayMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DisplayMesh"));
@@ -20,11 +22,12 @@
 	ScreenMesh->SetupAttachment(RootComponent);
 
 	// Create and attach the connection port mesh
-	InputPort = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("InputPortX"));
+	InputPort = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("InputPort"));
 	InputPort->SetupAttachment(RootComponent);
-
-	// Assign meshes for Switch, Button, and Connector
-	// Then setup the three materials for Disabled (Black), Off (Red), and On (Green)
+ 	
+ 	CableConnector = CreateDefaultSubobject<USceneComponent>("CableConnector");
+	CableConnector->SetupAttachment(InputPort);
+ 	
 	SetupMeshes();	
 	SetupMaterials();
 	
@@ -44,8 +47,13 @@
 	CollisionSphere->SetSphereRadius(100.0f); // Set the radius of the collision sphere
 	CollisionSphere->SetupAttachment(RootComponent);
 
-	
-	input_ = nullptr;
+	OutputCableX = CreateDefaultSubobject<UCableComponent>("DisplayConnected");
+ 	OutputCableX->AttachToComponent(CableConnector, FAttachmentTransformRules::KeepWorldTransform);
+ 	OutputCableX->SetAttachEndToComponent(CableConnector);
+ 	OutputCableX->SetupAttachment(RootComponent);
+ 	OutputCableX->SetVisibility(false);
+ 	
+	input_ = nullptr; // TODO: is this necessary?
 	bIsLit = false;
 }
 
@@ -59,11 +67,24 @@ void ADisplayOutput::BeginPlay()
 
 
 void ADisplayOutput::SetInput(AAbstractNode *input) {
-	input_ = input;
+
+ 	if (auto fullAdder = Cast<AFullAdder>(input))
+ 	{
+ 		if (fullAdder->GetFromOutputY())
+ 		{
+ 			input_ = fullAdder->GetCarryOutNode();
+ 			fullAdder->GetOutputCableY()->SetAttachEndTo(this, "InputPort");
+ 		}
+ 		else
+ 		{
+ 			input_= input;
+ 			input_->GetOutputCableX()->SetAttachEndTo(this, "InputPort");
+ 		}
+ 	}
+ 	
 	input_->Attach(this);
-
-	eLogicState currentState = input->GetState();
-
+ 	
+	eLogicState currentState = input_->GetState();
 	if (currentState == DISABLED)
 	{
 		ScreenMesh->SetMaterial(0, DisabledMaterial);
@@ -105,7 +126,7 @@ void ADisplayOutput::Update(eLogicState state) {
 	Notify();
 }
 
-// TODO: Remove Log messages from Meshes
+ // TODO: Remove Log messages from Meshes
 void ADisplayOutput::SetupMeshes()
 {
 	static ConstructorHelpers::FObjectFinder<UStaticMesh>
@@ -145,6 +166,7 @@ void ADisplayOutput::SetupMeshes()
 	}
 }
 
+// TODO: Move SetupMaterials to AbstractNode.
 void ADisplayOutput::SetupMaterials()
 {
 	// Load the materials from asset paths

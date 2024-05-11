@@ -4,18 +4,19 @@
 
 #include "CoreMinimal.h"
 #include "Nodes/AbstractTwoInputNode.h"
-#include "OrGate.generated.h"
+#include "XorGate.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class LOGICGATES_API AOrGate : public AAbstractTwoInputNode
+class LOGICGATES_API AXorGate : public AAbstractTwoInputNode
 {
 	GENERATED_BODY()
 
-public:
-	AOrGate();
+public: 
+	
+	AXorGate();
 	
 	eLogicState GetState() const override;
 };

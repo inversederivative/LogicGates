@@ -14,8 +14,8 @@
 #include "InputActionValue.h"
 #include "Nodes/DisplayOutput.h"
 #include "Nodes/PowerSource.h"
-#include "Nodes/LogicGates/AbstractTwoInputNode.h"
-#include "Nodes/LogicGates/AndGate.h"
+#include "Nodes/AbstractTwoInputNode.h"
+#include "Nodes/Adders/FullAdder.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -112,9 +112,10 @@ void ALogicGatesCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 
 		// Connect output to inputs -- Note this is a WORK IN PROGRESS
 		EnhancedInputComponent->BindAction(ConnectFromOutputXAction, ETriggerEvent::Started, this, &ALogicGatesCharacter::ConnectFromOutputX);
+		EnhancedInputComponent->BindAction(ConnectFromOutputYAction, ETriggerEvent::Started, this, &ALogicGatesCharacter::ConnectFromOutputY);
 		EnhancedInputComponent->BindAction(ConnectToInputXAction, ETriggerEvent::Started, this, &ALogicGatesCharacter::ConnectToInputX);
 		EnhancedInputComponent->BindAction(ConnectToInputYAction, ETriggerEvent::Started, this, &ALogicGatesCharacter::ConnectToInputY);
-
+		EnhancedInputComponent->BindAction(ConnectToInputZAction, ETriggerEvent::Started, this, &ALogicGatesCharacter::ConnectToInputZ);
 	}
 	else
 	{
@@ -189,25 +190,35 @@ void ALogicGatesCharacter::ToggleCurrentPowerSource()
 
 void ALogicGatesCharacter::ConnectFromOutputX()
 {
-	if (auto powerSource = Cast<APowerSource>(CurrentNode))
+	if (CurrentNode)
 	{
-		if (powerSource != LastOutputNode)
+		if (CurrentNode->GetHasOutputNode())
 		{
-			// We only reset the pointer, when we 
-			LastOutputNode = powerSource;
-			powerSource->GetOutputCableX()->SetAttachEndTo(this, "CharacterMesh0", "Left_Hand_Socket");
-			ConnectedToHand = true;
-		}
-	}
+			LastOutputNode = CurrentNode;
 
-	// Handle for TwoInput
-	if (auto twoInputNode = Cast<AAbstractTwoInputNode>(CurrentNode))
-	{
-		if (twoInputNode != LastOutputNode)
-		{
-			LastOutputNode = twoInputNode;
-			twoInputNode->GetOutputCableX()->SetAttachEndTo(this, "CharacterMesh0", "Left_Hand_Socket");
 			ConnectedToHand = true;
+		}	
+	}
+	
+	// TODO: Remove Connected to Hand?
+	// NOTE: It seems necessary, at least to signal that I'm connecting. Perhaps a rename?
+}
+
+void ALogicGatesCharacter::ConnectFromOutputY()
+{
+	if (CurrentNode)
+	{
+		if (auto fullAdder = Cast<AFullAdder>(CurrentNode))
+		{
+			LastOutputNode = fullAdder;
+			fullAdder->SetFromOutputY(true); // This is the perfect place to do this
+
+			ConnectedToHand = true;
+			IsFromOutputY = true;
+		}
+		if (CurrentNode->GetHasOutputNode())
+		{
+			// TODO: What was I doing here???
 		}
 	}
 }
@@ -215,6 +226,10 @@ void ALogicGatesCharacter::ConnectFromOutputX()
 
 void ALogicGatesCharacter::ConnectToInputX()
 {
+	// TODO: Research Line Tracing
+	// Perhaps this can only be used in a first person mode.
+	// This would necessaitate a complete overhaul of the character class...
+	
 	// FVector Loc;
 	// FRotator Rot;
 	// FHitResult Hit;
@@ -246,57 +261,63 @@ void ALogicGatesCharacter::ConnectToInputX()
 	//
 	// DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 5.0f);
 
+	// TODO: Perhaps we don't need ConnectedToHand?
+	// TODO: It seems necessary, we might need a rename.
+
+	// TODO: Figure out how to connect a cable to player's hand?
 	if (ConnectedToHand)
 	{
-		if (LastOutputNode)
+		if (LastOutputNode && CurrentNode)
 		{
 			if (auto display = Cast<ADisplayOutput>(CurrentNode))
 			{
-			
-				display->SetInput(LastOutputNode);
-				LastOutputNode->GetOutputCableX()->SetAttachEndTo(display,"InputPortX");
+				if (IsFromOutputY) // Can only be set if the last node was a FullAdder
+				{
+					auto fullAdder = Cast<AFullAdder>(LastOutputNode);
+					//display->SetInput(fullAdder->GetCarryOutNode());
+					display->SetInput(fullAdder);
+					IsFromOutputY = false;
+				}
+				else
+				{
+					auto fullAdder = Cast<AFullAdder>(LastOutputNode);
+					fullAdder->SetFromOutputY(false);
+					display->SetInput(fullAdder);
+				}
+				
 				ConnectedToHand = false;
-			
-				// NOTE: Should only reset power source, when we connect to a new one.
-				// NOTE NOTE: We shouldn't treat every output as a power source. Could also be an and gate.
-				// else
-				// {
-				// 	LastPowerSource = nullptr;
-				// }
 			}
 
 			if (auto twoInputNode = Cast<AAbstractTwoInputNode>(CurrentNode))
 			{
-				
-				// We only connect, if we have a valid output cable to connect from.
-				twoInputNode->SetInputX(LastOutputNode);
-				// We attach the end to the Connection Port (X) of the Two Input Node
-				// TODO: Get proper name for input node to attach to...
-				// Should be good?
-
-
-				// TO MY UTTER SURPRISE, THIS WORKED!!!!!!!
-				LastOutputNode->GetOutputCableX()->SetAttachEndTo(twoInputNode, "InputPortX");
+				if (IsFromOutputY)
+				{
+					auto fullAdder = Cast<AFullAdder>(LastOutputNode);
+					twoInputNode->SetInputX(fullAdder->GetCarryOutNode());
+					IsFromOutputY = false;
+				}
+				else
+				{
+					twoInputNode->SetInputX(LastOutputNode);
+				}
 				ConnectedToHand = false;
-				
-				
-				//if (auto andGate = Cast<AAndGate>(twoInputNode))
-				// {
-				// 	// Handle And gate
-				// 	andGate->SetInputX(LastOutputNode);
-				// 	LastOutputNode->GetOutputCableX()->SetAttachEndTo(andGate, "AndGate Component");
-				// 	
-				// }
-				// Handle Or Gate?
-				// if (auto orGate = Cast<AOrGate>(twoInputNode)
-				// This shouldn't be necessary. This is the whole point of the TwoInput abstract class.
-				// We should just call the abstract method SetInputX, and it resolves depending on if
-				// it is actually an AndGate or an OrGate
+			}
+			if (auto currentFullAdder = Cast<AFullAdder>(CurrentNode))
+			{
+				if (IsFromOutputY)
+				{
+					auto lastFullAdder = Cast<AFullAdder>(LastOutputNode);
+					currentFullAdder->SetInputX(lastFullAdder->GetCarryOutNode());
+					IsFromOutputY = false;
+				}
+				else
+				{
+					currentFullAdder->SetInputX(LastOutputNode);
+				}
+				ConnectedToHand = false;
 			}
 		}
 	}
-	
-	
 }
 
 
@@ -304,18 +325,70 @@ void ALogicGatesCharacter::ConnectToInputY()
 {
 	if (ConnectedToHand)
 	{
-		if (LastOutputNode)
+		if (LastOutputNode && CurrentNode)
 		{
 			if (auto twoInputNode = Cast<AAbstractTwoInputNode>(CurrentNode))
 			{
-				
-				// We only connect, if we have a valid output cable to connect from.
-				twoInputNode->SetInputY(LastOutputNode);
-				LastOutputNode->GetOutputCableX()->SetAttachEndTo(twoInputNode, "InputPortY");
-				
+
+				if (IsFromOutputY)
+				{
+					auto fullAdder = Cast<AFullAdder>(LastOutputNode);
+					twoInputNode->SetInputY(fullAdder->GetCarryOutNode());
+					
+					IsFromOutputY = false;
+				}
+				else
+				{
+					twoInputNode->SetInputY(LastOutputNode);
+				}
+			}
+
+			if (auto currentFullAdder = Cast<AFullAdder>(CurrentNode))
+			{
+				if (IsFromOutputY)
+				{
+					auto lastFullAdder = Cast<AFullAdder>(LastOutputNode);
+					currentFullAdder->SetInputY(lastFullAdder->GetCarryOutNode());
+					IsFromOutputY = false;
+				}
+				else
+				{
+					currentFullAdder->SetInputY(LastOutputNode);
+				}
+				ConnectedToHand = false;
 			}
 		}
 	}
-	
-	
+}
+
+void ALogicGatesCharacter::ConnectToInputZ()
+{
+	if (ConnectedToHand)
+	{
+		// Just to check that they're valid.
+		if (LastOutputNode && CurrentNode)
+		{
+			if (IsFromOutputY)
+			{
+				if (auto currentFullAdder = Cast<AFullAdder>(LastOutputNode))
+				{
+				
+					if (auto lastFullAdder = Cast<AFullAdder>(CurrentNode))
+					{
+						lastFullAdder->SetInputCarry(currentFullAdder);
+						ConnectedToHand = false;
+						IsFromOutputY = false;
+					}
+				}
+			}
+			else
+			{
+				if (auto lastFullAdder = Cast<AFullAdder>(CurrentNode))
+				{
+					lastFullAdder->SetInputCarry(LastOutputNode);
+					ConnectedToHand = false;
+				}
+			}
+		}
+	}
 }

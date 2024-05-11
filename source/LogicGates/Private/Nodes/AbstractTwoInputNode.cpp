@@ -1,44 +1,42 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Nodes/LogicGates/AbstractTwoInputNode.h"
+#include "Nodes/AbstractTwoInputNode.h"
 #include "LogicGates/LogicGatesCharacter.h"
 
 AAbstractTwoInputNode::AAbstractTwoInputNode()
 {
-	// Initialize members here.
-	outputState_ = DISABLED; // Set this in constructor.
-
+	SetHasOutputNode(true);
+	SetIsNodeForOtherNodes(false);
 	
-	LogicGateSceneComponent = CreateDefaultSubobject<USceneComponent>("Uninitialized SceneComponent");
-	RootComponent = LogicGateSceneComponent;
+	outputState_ = DISABLED;
+	
+	NodeSceneComponent = CreateDefaultSubobject<USceneComponent>("LogicGate SceneComponent");
+	RootComponent = NodeSceneComponent;
 
 	DisplayMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DisplayMesh"));
 	DisplayMesh->SetupAttachment(RootComponent);
-
 	
-
 	InputPortX = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("InputPortX"));
 	InputPortX->SetupAttachment(RootComponent);
-
 	InputPortY = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("InputPortY"));
 	InputPortY->SetupAttachment(RootComponent);
 
 	OutputPortX = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("OutputPortX"));
 	OutputPortX->SetupAttachment(RootComponent);
 
-	CableConnector = CreateDefaultSubobject<USceneComponent>("CableConnector"); 
+	CableConnector = CreateDefaultSubobject<USceneComponent>("CableConnector");
 	CableConnector->SetupAttachment(OutputPortX);
-
-	OutputCableX = CreateDefaultSubobject<UCableComponent>("AndGateOutput");
+	
+	OutputCableX = CreateDefaultSubobject<UCableComponent>("LogicGateCable");
 	OutputCableX->AttachToComponent(CableConnector, FAttachmentTransformRules::KeepWorldTransform);
-	//OutputCableX->SetAttachEndToComponent(OutputPortX);
-	// Connect Cable To Self
-	OutputCableX->SetAttachEndTo(this, "Cable Connector"); // Don't ask me why there is a space here... :'D
-
+	// TODO: Research why SetAttachEndToComponent does NOT work...?
+	//OutputCableX->SetupAttachment(CableConnector);
+	//OutputCableX->SetAttachEndToComponent(CableConnector);
+	OutputCableX->SetAttachEndTo(this, "Cable Component"); // Why the space, I wish I knew...
+	
 	SetupMeshes();
 	SetupMaterials();
-	
 	
 	// Set default material for the mesh
 	if (DisabledMaterial)
@@ -175,27 +173,46 @@ void AAbstractTwoInputNode::SetupMaterials()
 }
 
 
-void AAbstractTwoInputNode::SetInputX(AAbstractNode *input) {
+void AAbstractTwoInputNode::SetInputX(AAbstractNode *input)
+{
+	if (input != inputX && inputX)
+	{
+		// If we're connecting a new node that hasn't been connected, and inputX is already populated
+		// TODO: Implement later
+	}
+	
 	inputX = input;
-	input->Attach(this);
+	inputX->Attach(this);
 	connectedNodes_.push_back(input);
 
-	eLogicState currentState = input->GetState();
+	// TODO: Research potential initialization of CableComponent during runtime.
+	// TODO: This would enable multiple cables coming from one output node.
+	// TODO: Otherwise, we could simply reverse the cable connection points.
+	// TODO: You can have multiple nodes connected to one input node, but only one node
+	// TODO: originating from an output node.
+	//auto cableComponent = NewObject<UCableComponent>(inputX);
+	//inputX->GetOutputCableX()->AttachToComponent(inputX->CableConnector, FAttachmentTransformRules::KeepWorldTransform);
 
-	if (currentState == DISABLED)
+
+	if (!IsNodeForOtherNodes)
 	{
-		InputPortX->SetMaterial(0, DisabledMaterial);
-	}
-	if (currentState == OFF)
-	{
-		InputPortX->SetMaterial(0, OffMaterial);
-	}
-	if (currentState == ON)
-	{
-		InputPortX->SetMaterial(0, OnMaterial);
+		inputX->GetOutputCableX()->SetAttachEndTo(this, "InputPortX");
+		eLogicState currentState = input->GetState();
+
+		if (currentState == DISABLED)
+		{
+			InputPortX->SetMaterial(0, DisabledMaterial);
+		}
+		if (currentState == OFF)
+		{
+			InputPortX->SetMaterial(0, OffMaterial);
+		}
+		if (currentState == ON)
+		{
+			InputPortX->SetMaterial(0, OnMaterial);
+		}
 	}
 
-	// Should call the appropriate Update Function from And Gate, Or Gate, etc... 
 	AAbstractTwoInputNode::Update(GetState());
 }
 
@@ -204,27 +221,94 @@ void AAbstractTwoInputNode::SetInputY(AAbstractNode *input) {
 	input->Attach(this);
 	connectedNodes_.push_back(input);
 
-	eLogicState currentState = input->GetState();
+	if (!IsNodeForOtherNodes)
+	{
+		inputY->GetOutputCableX()->SetAttachEndTo(this, "InputPortY");
 
+		eLogicState currentState = input->GetState();
 
-	if (currentState == DISABLED)
-	{
-		InputPortY->SetMaterial(0, DisabledMaterial);
+		if (currentState == DISABLED)
+		{
+			InputPortY->SetMaterial(0, DisabledMaterial);
+		}
+		if (currentState == OFF)
+		{
+			InputPortY->SetMaterial(0, OffMaterial);
+		}
+		if (currentState == ON)
+		{
+			InputPortY->SetMaterial(0, OnMaterial);
+		}
 	}
-	if (currentState == OFF)
-	{
-		InputPortY->SetMaterial(0, OffMaterial);
-	}
-	if (currentState == ON)
-	{
-		InputPortY->SetMaterial(0, OnMaterial);
-	}
+	
 	AAbstractTwoInputNode::Update(GetState());
+}
+
+void AAbstractTwoInputNode::RemoveInputX()
+{
+	inputX->Detach(this);
+	connectedNodes_.remove(inputX);
+
+	// TODO: Test thorougly
+	//OutputCableX
+	//OutputXCables.Remove(inputX);
+	inputX = nullptr;
+}
+
+void AAbstractTwoInputNode::RemoveInputY()
+{
+	inputY->Detach(this);
+	connectedNodes_.remove(inputY);
+	inputY = nullptr;
 }
 
 void AAbstractTwoInputNode::Update(eLogicState state) {
 	// Notify observers of the new output state
 	outputState_ = state;
-	
+
+	if (inputX)
+	{
+		switch (inputX->GetState())
+		{
+		case DISABLED:
+			InputPortX->SetMaterial(0, DisabledMaterial);
+			break;
+		case OFF:
+			InputPortX->SetMaterial(0, OffMaterial);
+			break;
+		case ON:
+			InputPortX->SetMaterial(0, OnMaterial);
+			break;
+		}
+	}
+
+	if (inputY)
+	{
+		switch (inputY->GetState())
+		{
+		case DISABLED:
+			InputPortY->SetMaterial(0, DisabledMaterial);
+			break;
+		case OFF:
+			InputPortY->SetMaterial(0, OffMaterial);
+			break;
+		case ON:
+			InputPortY->SetMaterial(0, OnMaterial);
+			break;
+		}
+	}
+	eLogicState output = GetState();
+	switch(output)
+	{
+	case DISABLED:
+		OutputPortX->SetMaterial(0, DisabledMaterial);
+		break;
+	case OFF:
+		OutputPortX->SetMaterial(0, OffMaterial);
+		break;
+	case ON:
+		OutputPortX->SetMaterial(0, OnMaterial);
+		break;
+	}
 	Notify();
 }

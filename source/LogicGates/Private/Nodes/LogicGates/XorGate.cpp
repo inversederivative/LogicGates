@@ -1,30 +1,28 @@
-﻿#include "Nodes/LogicGates/AndGate.h"
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
+#include "Nodes/LogicGates/XorGate.h"
 
-AAndGate::AAndGate()
+AXorGate::AXorGate()
 {
-    
 	// Set Mesh for AndGate
 	static ConstructorHelpers::FObjectFinder<UStaticMesh>
-	AndGateAsset(TEXT("StaticMesh'/Game/LogicGates/LogicGates/Mesh_AndGate'"));
+	AndGateAsset(TEXT("StaticMesh'/Game/LogicGates/LogicGates/Mesh_XorGate'"));
 	if (AndGateAsset.Succeeded())
 	{
 		DisplayMesh->SetStaticMesh(AndGateAsset.Object);
-		UE_LOG(LogTemp, Display, TEXT("****Successfully assigned mesh asset to AndGate!."));
+		UE_LOG(LogTemp, Display, TEXT("****Successfully assigned mesh asset to XorGate!."));
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("****Failed to find AndGate Asset."));
+		UE_LOG(LogTemp, Warning, TEXT("****Failed to find XorGate Asset."));
 	}
 }
 
-// TODO: Totally need to redo:
-
-eLogicState AAndGate::GetState() const {
-
-    eLogicState output = DISABLED;
-	
+eLogicState AXorGate::GetState() const
+{
+	eLogicState output = DISABLED;
+    
     if (inputX && inputY)
     {
         if (inputX->GetState() == DISABLED || inputY->GetState() == DISABLED)
@@ -66,27 +64,23 @@ eLogicState AAndGate::GetState() const {
                 // Case 7 F,T
             else if (inputX->GetState() == OFF && inputY->GetState() == ON)
             {
-                output = OFF;
+                output = ON;
             }
                 // Case 8 T,F
             else if (inputX->GetState() == ON && inputY->GetState() == OFF)
             {
-                output = OFF;
+                output = ON;
             }
                 // Case 9 T,T
             else if (inputX->GetState() == ON && inputY->GetState() == ON)
             {
-                output = ON;
+                output = OFF;
             }
         }
     }
     else {
-        // For debugging from original LogicGatesAndEvents project. Not necessary for Release Build
-        // TODO: Remove COUT statement.
-        std::cout<< "Both Inputs of AndGate weren't populated yet..." << std::endl;
+        std::cout<< "Both Inputs of XorGate weren't populated yet..." << std::endl;
         output = DISABLED;
     }
-    return output;
+	return output;
 }
-
-

@@ -4,13 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "AbstractNode.h"
-#include "Components/SphereComponent.h"
 #include "AbstractTwoInputNode.generated.h"
 
 /**
  * 
  */
-UCLASS()
+UCLASS(Blueprintable)
 class LOGICGATES_API AAbstractTwoInputNode : public AAbstractNode
 {
 	GENERATED_BODY()
@@ -18,10 +17,9 @@ class LOGICGATES_API AAbstractTwoInputNode : public AAbstractNode
 public:
 
 	AAbstractTwoInputNode();
-
 	
 	void BeginPlay() override;
-
+	
 	UFUNCTION(BlueprintCallable)
 	void SetInputX(AAbstractNode* input);
 	
@@ -29,7 +27,35 @@ public:
 	void SetInputY(AAbstractNode* input);
 
 	UFUNCTION(BlueprintCallable)
+	void RemoveInputX();
+
+	UFUNCTION(BlueprintCallable)
+	void RemoveInputY();
+	
+	UFUNCTION(BlueprintCallable)
 	void Update(eLogicState state) override;
+
+	UFUNCTION(BlueprintCallable)
+	AAbstractNode* GetInputX()
+	{
+		return inputX;
+	}
+	
+	UFUNCTION(BlueprintCallable)
+	AAbstractNode* GetInputY()
+	{
+		return inputY;
+	}
+	
+	bool GetIsNodeForOtherNodes() const
+	{
+		return IsNodeForOtherNodes;
+	}
+
+	void SetIsNodeForOtherNodes(bool answer)
+	{
+		IsNodeForOtherNodes = answer;
+	}
 	
 protected:
 
@@ -46,25 +72,13 @@ protected:
 	void OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) override;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
-	USceneComponent* LogicGateSceneComponent;
+	USceneComponent* NodeSceneComponent;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	UStaticMeshComponent* DisplayMesh;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Power Source", meta = (AllowPrivateAccess = "true"))
-	UMaterialInterface* DisabledMaterial;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Power Source", meta = (AllowPrivateAccess = "true"))
-	UMaterialInterface* OffMaterial;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Power Source", meta = (AllowPrivateAccess = "true"))
-	UMaterialInterface* OnMaterial;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Power Source", meta = (AllowPrivateAccess = "true"))
 	UMaterialInterface* StandMaterial;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
-	USceneComponent* CableConnector;
 	
 	// Connection Ports
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Power Ports", meta = (AllowPrivateAccess = "true"))
@@ -76,15 +90,15 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Power Ports", meta = (AllowPrivateAccess = "true"))
 	UStaticMeshComponent* OutputPortX;
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
-	USphereComponent* CollisionSphere;
-	
-	// TODO: Get rid of the private members in AndGate, and setup abstract getters and setters here.
 	// TODO: find a way to make these members private not protected?
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	AAbstractNode* inputX;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	AAbstractNode* inputY;
+	
 	eLogicState outputState_;
 	std::list<IObserver*> connectedNodes_;
 
-	
+	bool IsNodeForOtherNodes;
 };

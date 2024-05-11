@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
-#include "AbstractTwoInputNode.h"
+#include "Nodes/AbstractTwoInputNode.h"
 
 #include "AndGate.generated.h"
 
@@ -14,6 +14,5 @@ public:
 
 	AAndGate();
 
-	UFUNCTION(BlueprintCallable)
 	eLogicState GetState() const override;
 };
