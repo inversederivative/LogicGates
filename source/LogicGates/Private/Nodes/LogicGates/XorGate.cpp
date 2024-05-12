@@ -5,6 +5,8 @@
 
 AXorGate::AXorGate()
 {
+    SetNodeName("XorGate");
+    
 	// Set Mesh for AndGate
 	static ConstructorHelpers::FObjectFinder<UStaticMesh>
 	AndGateAsset(TEXT("StaticMesh'/Game/LogicGates/LogicGates/Mesh_XorGate'"));

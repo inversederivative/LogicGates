@@ -4,6 +4,7 @@
 
 AAndGate::AAndGate()
 {
+    SetNodeName("AndGate");
     
 	// Set Mesh for AndGate
 	static ConstructorHelpers::FObjectFinder<UStaticMesh>

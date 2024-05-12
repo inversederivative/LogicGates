@@ -56,6 +56,10 @@ public:
 	{
 		IsNodeForOtherNodes = answer;
 	}
+
+	FString SerializeNode() override;
+
+	AAbstractNode* DeserializeNode(FString nodeJson) override;
 	
 protected:
 
@@ -98,7 +102,8 @@ protected:
 	AAbstractNode* inputY;
 	
 	eLogicState outputState_;
-	std::list<IObserver*> connectedNodes_;
+	//std::list<IObserver*> connectedNodes_;
+	TMap<int, IObserver*> connectedNodesMap_;
 
 	bool IsNodeForOtherNodes;
 };

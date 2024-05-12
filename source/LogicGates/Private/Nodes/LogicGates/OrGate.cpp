@@ -6,6 +6,8 @@
 
 AOrGate::AOrGate()
 {
+    SetNodeName("OrGate");
+    
 	static ConstructorHelpers::FObjectFinder<UStaticMesh>
 	AndGateAsset(TEXT("StaticMesh'/Game/LogicGates/LogicGates/Mesh_OrGate'"));
 	if (AndGateAsset.Succeeded())

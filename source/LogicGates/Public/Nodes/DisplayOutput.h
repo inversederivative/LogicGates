@@ -44,7 +44,8 @@ protected:
 
 
 private:
-	std::list<IObserver*> connectedNodes_;
+	//std::list<IObserver*> connectedNodes_;
+	TMap<int, IObserver*> connectedNodesMap_; 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Display", meta = (AllowPrivateAccess = "true"))
 	AAbstractNode* input_;
 	

@@ -16,6 +16,7 @@
 #include "Nodes/PowerSource.h"
 #include "Nodes/AbstractTwoInputNode.h"
 #include "Nodes/Adders/FullAdder.h"
+#include "Nodes/LogicGates/TriStateBufferGate.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -110,6 +111,9 @@ void ALogicGatesCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		// Toggle Power Source
 		EnhancedInputComponent->BindAction(PowerToggleAction, ETriggerEvent::Started, this, &ALogicGatesCharacter::ToggleCurrentPowerSource);
 
+		EnhancedInputComponent->BindAction(OpenBuildMenuAction, ETriggerEvent::Started, this, &ALogicGatesCharacter::OpenBuildMenu);
+		EnhancedInputComponent->BindAction(PlaceObjectAction, ETriggerEvent::Started, this, &ALogicGatesCharacter::PlaceObject);
+		
 		// Connect output to inputs -- Note this is a WORK IN PROGRESS
 		EnhancedInputComponent->BindAction(ConnectFromOutputXAction, ETriggerEvent::Started, this, &ALogicGatesCharacter::ConnectFromOutputX);
 		EnhancedInputComponent->BindAction(ConnectFromOutputYAction, ETriggerEvent::Started, this, &ALogicGatesCharacter::ConnectFromOutputY);
@@ -157,6 +161,14 @@ void ALogicGatesCharacter::Look(const FInputActionValue& Value)
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
 	}
+}
+
+void ALogicGatesCharacter::OpenBuildMenu()
+{
+}
+
+void ALogicGatesCharacter::PlaceObject()
+{
 }
 
 void ALogicGatesCharacter::ToggleCurrentPowerSource()
@@ -280,9 +292,16 @@ void ALogicGatesCharacter::ConnectToInputX()
 				}
 				else
 				{
-					auto fullAdder = Cast<AFullAdder>(LastOutputNode);
-					fullAdder->SetFromOutputY(false);
-					display->SetInput(fullAdder);
+					if (auto fullAdder = Cast<AFullAdder>(LastOutputNode))
+					{
+						// Do we need this?
+						fullAdder->SetFromOutputY(false);
+						display->SetInput(fullAdder);
+					}
+					else
+					{
+						display->SetInput(LastOutputNode);	
+					}
 				}
 				
 				ConnectedToHand = false;
@@ -313,6 +332,21 @@ void ALogicGatesCharacter::ConnectToInputX()
 				else
 				{
 					currentFullAdder->SetInputX(LastOutputNode);
+				}
+				ConnectedToHand = false;
+			}
+
+			if (auto triStateNode = Cast<ATriStateBufferGate>(CurrentNode))
+			{
+				if (IsFromOutputY)
+				{
+					auto fullAdder = Cast<AFullAdder>(LastOutputNode);
+					triStateNode->SetDataInput(fullAdder->GetCarryOutNode());
+					IsFromOutputY = false;
+				}
+				else
+				{
+					triStateNode->SetDataInput(LastOutputNode);
 				}
 				ConnectedToHand = false;
 			}
@@ -354,6 +388,21 @@ void ALogicGatesCharacter::ConnectToInputY()
 				else
 				{
 					currentFullAdder->SetInputY(LastOutputNode);
+				}
+				ConnectedToHand = false;
+			}
+
+			if (auto triStateNode = Cast<ATriStateBufferGate>(CurrentNode))
+			{
+				if (IsFromOutputY)
+				{
+					auto fullAdder = Cast<AFullAdder>(LastOutputNode);
+					triStateNode->SetEnableInput(fullAdder->GetCarryOutNode());
+					IsFromOutputY = false;
+				}
+				else
+				{
+					triStateNode->SetEnableInput(LastOutputNode);
 				}
 				ConnectedToHand = false;
 			}

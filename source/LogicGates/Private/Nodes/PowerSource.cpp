@@ -8,6 +8,8 @@
 
 APowerSource::APowerSource()
 {
+	SetNodeName("PowerSource");
+	
 	SetHasOutputNode(true);
 	
 	PowerSourceSceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("PowerSource SceneComponent"));

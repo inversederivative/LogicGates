@@ -91,11 +91,63 @@ void AAbstractTwoInputNode::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AA
 	}
 }
 
+// FString AAbstractTwoInputNode::SerializeNode()
+// {
+// 	// Create a JSON object
+// 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+//
+// 	// Add int and string values to the JSON object
+// 	JsonObject->SetNumberField(TEXT("serialNumber"), GetSerialNumber());
+// 	JsonObject->SetStringField(TEXT("nodeName"), GetNodeName());
+//
+// 	// Create a writer and write JSON to string
+// 	FString OutputString;
+// 	TSharedRef<TJsonWriter<TCHAR>> JsonWriter = TJsonWriterFactory<>::Create(&OutputString);
+// 	FJsonSerializer::Serialize(JsonObject.ToSharedRef(), JsonWriter);
+//
+// 	return OutputString;
+// }
+
+FString AAbstractTwoInputNode::SerializeNode()
+{
+	// Create a JSON array to store node entries
+	TArray<TSharedPtr<FJsonValue>> NodesArray;
+
+	// Iterate through each item in the map
+	for (const auto& Pair : connectedNodesMap_)
+	{
+		// Create a JSON object for each node
+		TSharedPtr<FJsonObject> NodeObject = MakeShareable(new FJsonObject);
+		NodeObject->SetNumberField(TEXT("NodeId"), Pair.Key);
+		NodeObject->SetStringField(TEXT("NodeName"), Cast<AAbstractNode>(Pair.Value)->GetNodeName());
+
+		// Add the node object to the array
+		TSharedPtr<FJsonValueObject> NodeJsonValue = MakeShareable(new FJsonValueObject(NodeObject));
+		NodesArray.Add(NodeJsonValue);
+	}
+
+	// Create a JSON object to hold the array of nodes
+	TSharedPtr<FJsonObject> RootObject = MakeShareable(new FJsonObject);
+	RootObject->SetArrayField(TEXT("Nodes"), NodesArray);
+
+	// Create a writer and write JSON to string
+	FString OutputString;
+	TSharedRef<TJsonWriter<TCHAR>> JsonWriter = TJsonWriterFactory<>::Create(&OutputString);
+	FJsonSerializer::Serialize(RootObject.ToSharedRef(), JsonWriter);
+
+	return OutputString;
+}
+
+AAbstractNode* AAbstractTwoInputNode::DeserializeNode(FString nodeJson)
+{
+	return Super::DeserializeNode(nodeJson);
+}
+
 void AAbstractTwoInputNode::SetupMeshes()
 {
 	// I've moved the Mesh handling to the individual constructors.
 
-
+	// TODO: Figure out what to remove here.
 	// NOTE: Don't need screen for AND Gate
 	// static ConstructorHelpers::FObjectFinder<UStaticMesh>
 	// ScreenAsset(TEXT("StaticMesh'/Game/LogicGates/LogicGates/Mesh_Screen'"));	
@@ -183,8 +235,9 @@ void AAbstractTwoInputNode::SetInputX(AAbstractNode *input)
 	
 	inputX = input;
 	inputX->Attach(this);
-	connectedNodes_.push_back(input);
-
+	//connectedNodes_.push_back(input);
+	connectedNodesMap_.Add(input->GetSerialNumber(), input);
+	
 	// TODO: Research potential initialization of CableComponent during runtime.
 	// TODO: This would enable multiple cables coming from one output node.
 	// TODO: Otherwise, we could simply reverse the cable connection points.
@@ -219,8 +272,8 @@ void AAbstractTwoInputNode::SetInputX(AAbstractNode *input)
 void AAbstractTwoInputNode::SetInputY(AAbstractNode *input) {
 	inputY = input;
 	input->Attach(this);
-	connectedNodes_.push_back(input);
-
+	//connectedNodes_.push_back(input);
+	connectedNodesMap_.Add(input->GetSerialNumber(), input);
 	if (!IsNodeForOtherNodes)
 	{
 		inputY->GetOutputCableX()->SetAttachEndTo(this, "InputPortY");
@@ -247,8 +300,9 @@ void AAbstractTwoInputNode::SetInputY(AAbstractNode *input) {
 void AAbstractTwoInputNode::RemoveInputX()
 {
 	inputX->Detach(this);
-	connectedNodes_.remove(inputX);
-
+	//connectedNodes_.remove(inputX);
+	connectedNodesMap_.Remove(inputX->GetSerialNumber());
+	
 	// TODO: Test thorougly
 	//OutputCableX
 	//OutputXCables.Remove(inputX);
@@ -258,7 +312,8 @@ void AAbstractTwoInputNode::RemoveInputX()
 void AAbstractTwoInputNode::RemoveInputY()
 {
 	inputY->Detach(this);
-	connectedNodes_.remove(inputY);
+	//connectedNodes_.remove(inputY);
+	connectedNodesMap_.Remove(inputY->GetSerialNumber());
 	inputY = nullptr;
 }
 

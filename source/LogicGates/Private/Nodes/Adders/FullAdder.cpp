@@ -5,6 +5,8 @@
 
 AFullAdder::AFullAdder()
 {
+	SetNodeName("FullAdder");
+	
 	SetHasOutputNode(true);
 	outputSumState_ = DISABLED;
 	outputCarryState_ = DISABLED;

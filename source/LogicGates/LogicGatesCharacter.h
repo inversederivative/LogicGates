@@ -49,6 +49,12 @@ class ALogicGatesCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))
 	UInputAction* LookAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))
+	UInputAction* OpenBuildMenuAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))
+	UInputAction* PlaceObjectAction;
+	
 	/** For Toggling Power Sources*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))
 	UInputAction* PowerToggleAction;
@@ -79,7 +85,7 @@ class ALogicGatesCharacter : public ACharacter
 	bool ConnectedToHand;
 
 	bool IsFromOutputY;
-	
+
 public:
 	ALogicGatesCharacter();
 
@@ -95,6 +101,12 @@ protected:
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
 
+	UFUNCTION(BlueprintCallable, Category = "Building")
+	void OpenBuildMenu();
+
+	UFUNCTION(BlueprintCallable, Category = "Building")
+	void PlaceObject();
+	
 	UFUNCTION(BlueprintCallable, Category = "Power")
 	void ToggleCurrentPowerSource();
 

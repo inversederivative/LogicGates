@@ -8,6 +8,8 @@
 
  ADisplayOutput::ADisplayOutput()
 {
+
+ 	SetNodeName("DisplayOutput");
  	
 	// Set default mesh
 
@@ -81,8 +83,14 @@ void ADisplayOutput::SetInput(AAbstractNode *input) {
  			input_->GetOutputCableX()->SetAttachEndTo(this, "InputPort");
  		}
  	}
+ 	else
+ 	{
+ 		input_ = input;
+ 		input_->GetOutputCableX()->SetAttachEndTo(this, "InputPort");
+ 	}
  	
 	input_->Attach(this);
+ 	connectedNodesMap_.Add(input->GetSerialNumber(), input);
  	
 	eLogicState currentState = input_->GetState();
 	if (currentState == DISABLED)
