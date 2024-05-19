@@ -74,6 +74,12 @@ class ALogicGatesCharacter : public ACharacter
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))
 	UInputAction* ConnectToInputZAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))
+	UInputAction* SerializeAllAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))
+	UInputAction* DeSerializeAllAction;
 	
 	/** Reference to the current node in radius*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Power", meta = (AllowPrivateAccess = "true"))
@@ -92,6 +98,28 @@ public:
 	void SetCurrentNode(AAbstractNode* currentNode);
 
 	void SetLastOutputNode(AAbstractNode* lastOutputNode);
+
+	UFUNCTION(BlueprintCallable)
+	FString SerializeAllNodes(const TArray<AAbstractNode*>& AllNodes);
+
+	UFUNCTION(BlueprintCallable)
+	FString ReadStringFromFile(FString FilePath, bool& bOutSuccess, FString& OutInfoMessage);
+	
+	UFUNCTION(BlueprintCallable)
+	void WriteStringToFile(FString FilePath, FString String, bool& bOutSuccess, FString& OutInfoMessage);
+	
+	UFUNCTION(BlueprintCallable)
+	FString GetUniqueFilePath(const FString& BasePath);
+
+	UFUNCTION(BlueprintCallable)
+	AAbstractNode* DeserializeNode(FString nodeJson);
+	
+	AAbstractNode* DeserializeNodeFromJsonObject(const TSharedPtr<FJsonObject>& NodeJsonObject);
+
+	
+	
+	UFUNCTION(BlueprintCallable)
+	TMap<int, AAbstractNode*> DeserializeAllNodes(FString fullJson);
 
 protected:
 

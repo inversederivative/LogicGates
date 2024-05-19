@@ -18,7 +18,7 @@ class LOGICGATES_API ATriStateBufferGate : public AAbstractNode
 	AAbstractNode* enableInput;
 	eLogicState outputState_ = DISABLED;
 	//std::list<IObserver*> connectedNodes_;
-	TMap<int, IObserver*> connectedNodesMap_;
+	//TMap<int, IObserver*> connectedNodesMap_;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	USceneComponent* TriStateBufferGateRoot;

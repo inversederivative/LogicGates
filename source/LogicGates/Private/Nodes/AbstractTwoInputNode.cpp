@@ -8,6 +8,8 @@ AAbstractTwoInputNode::AAbstractTwoInputNode()
 {
 	SetHasOutputNode(true);
 	SetIsNodeForOtherNodes(false);
+
+	SetDeserializationNumber(SerialNumber);
 	
 	outputState_ = DISABLED;
 	
@@ -34,6 +36,11 @@ AAbstractTwoInputNode::AAbstractTwoInputNode()
 	//OutputCableX->SetupAttachment(CableConnector);
 	//OutputCableX->SetAttachEndToComponent(CableConnector);
 	OutputCableX->SetAttachEndTo(this, "Cable Component"); // Why the space, I wish I knew...
+
+	SetCableConnectNumber(GetSerialNumber());
+	SetCableConnectString("Cable Component");
+	SetCableConnectFrom("X");
+	
 	
 	SetupMeshes();
 	SetupMaterials();
@@ -108,28 +115,60 @@ void AAbstractTwoInputNode::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AA
 // 	return OutputString;
 // }
 
+
 FString AAbstractTwoInputNode::SerializeNode()
 {
 	// Create a JSON array to store node entries
-	TArray<TSharedPtr<FJsonValue>> NodesArray;
+	TArray<TSharedPtr<FJsonValue>> connectionsArray;
+	
 
-	// Iterate through each item in the map
-	for (const auto& Pair : connectedNodesMap_)
+	for (const auto& Pair : GetConnectionSerializationArray())
 	{
 		// Create a JSON object for each node
 		TSharedPtr<FJsonObject> NodeObject = MakeShareable(new FJsonObject);
-		NodeObject->SetNumberField(TEXT("NodeId"), Pair.Key);
-		NodeObject->SetStringField(TEXT("NodeName"), Cast<AAbstractNode>(Pair.Value)->GetNodeName());
+		NodeObject->SetNumberField(TEXT("serialNumber"), Pair.Key);
+		NodeObject->SetStringField(TEXT("xOrY"), Pair.Value);
 
 		// Add the node object to the array
 		TSharedPtr<FJsonValueObject> NodeJsonValue = MakeShareable(new FJsonValueObject(NodeObject));
-		NodesArray.Add(NodeJsonValue);
+		connectionsArray.Add(NodeJsonValue);
 	}
 
+	// Report Transform information
+	FTransform NodeTransform = GetActorTransform();
+	FVector NodePosition = NodeTransform. GetTranslation();
+	FRotator NodeRotation = NodeTransform.Rotator();
+	
 	// Create a JSON object to hold the array of nodes
 	TSharedPtr<FJsonObject> RootObject = MakeShareable(new FJsonObject);
-	RootObject->SetArrayField(TEXT("Nodes"), NodesArray);
+	RootObject->SetStringField(TEXT("nodeName"), GetNodeName());
+	RootObject->SetNumberField(TEXT("serialNumber"), GetSerialNumber());
 
+	if (inputX)
+	{
+		RootObject->SetNumberField(TEXT("inputX"),
+		inputX->GetSerialNumber());
+	}
+	if (inputY)
+	{
+		RootObject->SetNumberField(TEXT("inputY"),
+		inputY->GetSerialNumber());
+	}
+	
+	TSharedPtr<FJsonObject> PositionObject = MakeShareable(new FJsonObject);
+	PositionObject->SetNumberField(TEXT("x"), NodePosition.X);
+	PositionObject->SetNumberField(TEXT("y"), NodePosition.Y);
+	PositionObject->SetNumberField(TEXT("z"), NodePosition.Z);
+
+	TSharedPtr<FJsonObject> RotationObject = MakeShareable(new FJsonObject);
+	RotationObject->SetNumberField(TEXT("pitch"), NodeRotation.Pitch);
+	RotationObject->SetNumberField(TEXT("yaw"), NodeRotation.Yaw);
+	RotationObject->SetNumberField(TEXT("roll"), NodeRotation.Roll);
+
+	RootObject->SetObjectField(TEXT("position"), PositionObject);
+	RootObject->SetObjectField(TEXT("rotation"), RotationObject);
+	RootObject->SetArrayField(TEXT("connections"), connectionsArray);
+	
 	// Create a writer and write JSON to string
 	FString OutputString;
 	TSharedRef<TJsonWriter<TCHAR>> JsonWriter = TJsonWriterFactory<>::Create(&OutputString);
@@ -138,10 +177,32 @@ FString AAbstractTwoInputNode::SerializeNode()
 	return OutputString;
 }
 
-AAbstractNode* AAbstractTwoInputNode::DeserializeNode(FString nodeJson)
+void AAbstractTwoInputNode::ResetConnectionsArray()
 {
-	return Super::DeserializeNode(nodeJson);
+	//ConnectionSerializationArray = {};
+
+	int index = 0;
+	TArray<FKeyValuePair> tempArray;
+	for (auto output : GetObservers())
+	{
+		while (index < GetObservers().size())
+		{
+			auto absNode = Cast<AAbstractNode>(output);
+			int oldSerial = absNode->GetDeserializationNumber();
+			FKeyValuePair pair;
+			
+			if (ConnectionSerializationArray[index].Key == oldSerial)
+			{
+				pair.Key = absNode->GetSerialNumber();
+				pair.Value = ConnectionSerializationArray[index].Value;
+				tempArray.Add(pair);
+			}
+			index++;
+		}
+	}
+	SetConnectionSerializationArray(tempArray);
 }
+
 
 void AAbstractTwoInputNode::SetupMeshes()
 {
@@ -236,7 +297,7 @@ void AAbstractTwoInputNode::SetInputX(AAbstractNode *input)
 	inputX = input;
 	inputX->Attach(this);
 	//connectedNodes_.push_back(input);
-	connectedNodesMap_.Add(input->GetSerialNumber(), input);
+	connectedNodes_.push_back(input);
 	
 	// TODO: Research potential initialization of CableComponent during runtime.
 	// TODO: This would enable multiple cables coming from one output node.
@@ -250,6 +311,10 @@ void AAbstractTwoInputNode::SetInputX(AAbstractNode *input)
 	if (!IsNodeForOtherNodes)
 	{
 		inputX->GetOutputCableX()->SetAttachEndTo(this, "InputPortX");
+		inputX->SetCableConnectNumber(this->GetSerialNumber());
+		inputX->SetCableConnectString("InputPortX");
+		inputX->SetCableConnectFrom("X");
+		
 		eLogicState currentState = input->GetState();
 
 		if (currentState == DISABLED)
@@ -273,10 +338,12 @@ void AAbstractTwoInputNode::SetInputY(AAbstractNode *input) {
 	inputY = input;
 	input->Attach(this);
 	//connectedNodes_.push_back(input);
-	connectedNodesMap_.Add(input->GetSerialNumber(), input);
+	connectedNodes_.push_back(input);
 	if (!IsNodeForOtherNodes)
 	{
 		inputY->GetOutputCableX()->SetAttachEndTo(this, "InputPortY");
+		inputY->SetCableConnectNumber(this->GetSerialNumber());
+		inputY->SetCableConnectString("InputPortY");
 
 		eLogicState currentState = input->GetState();
 
@@ -300,8 +367,7 @@ void AAbstractTwoInputNode::SetInputY(AAbstractNode *input) {
 void AAbstractTwoInputNode::RemoveInputX()
 {
 	inputX->Detach(this);
-	//connectedNodes_.remove(inputX);
-	connectedNodesMap_.Remove(inputX->GetSerialNumber());
+	connectedNodes_.remove(inputX);
 	
 	// TODO: Test thorougly
 	//OutputCableX
@@ -312,8 +378,7 @@ void AAbstractTwoInputNode::RemoveInputX()
 void AAbstractTwoInputNode::RemoveInputY()
 {
 	inputY->Detach(this);
-	//connectedNodes_.remove(inputY);
-	connectedNodesMap_.Remove(inputY->GetSerialNumber());
+	connectedNodes_.remove(inputY);
 	inputY = nullptr;
 }
 

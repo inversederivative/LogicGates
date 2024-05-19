@@ -27,6 +27,9 @@ public:
 	eLogicState GetState() const override;
 
 	void Update(eLogicState state) override;
+
+	
+	FString SerializeNode() override;
 	
 protected:
 
@@ -41,11 +44,11 @@ protected:
 
 	UFUNCTION()
 	void OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-
+		
 
 private:
 	//std::list<IObserver*> connectedNodes_;
-	TMap<int, IObserver*> connectedNodesMap_; 
+	//TMap<int, IObserver*> connectedNodesMap_; 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Display", meta = (AllowPrivateAccess = "true"))
 	AAbstractNode* input_;
 	

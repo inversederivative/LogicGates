@@ -32,6 +32,10 @@ ATriStateBufferGate::ATriStateBufferGate()
 	OutputCableX = CreateDefaultSubobject<UCableComponent>(TEXT("TriStateBufferGate"));
 	OutputCableX->AttachToComponent(CableConnector, FAttachmentTransformRules::KeepWorldTransform);
 	OutputCableX->SetAttachEndTo(this, "Cable Connector");
+
+	SetCableConnectNumber(GetSerialNumber());
+	SetCableConnectString("Cable Connector");
+	SetCableConnectFrom("X");
 	
 	SetupMeshes();
 	SetupMaterials();
@@ -171,7 +175,7 @@ void ATriStateBufferGate::SetDataInput(AAbstractNode* input)
 	dataInput = input;
 	input->Attach(this);
 	//connectedNodes_.push_back(input);
-	connectedNodesMap_.Add(input->GetSerialNumber(), input);
+	connectedNodes_.push_back(input);
 
 	dataInput->GetOutputCableX()->SetAttachEndTo(this, "InputPortData");
 	eLogicState currentState = input->GetState();
@@ -197,7 +201,7 @@ void ATriStateBufferGate::SetEnableInput(AAbstractNode* input)
 	enableInput = input;
 	input->Attach(this);
 	//connectedNodes_.push_back(input);
-	connectedNodesMap_.Add(input->GetSerialNumber(), input);
+	connectedNodes_.push_back(input);
 
 	enableInput->GetOutputCableX()->SetAttachEndTo(this, "InputPortEnable");
 	eLogicState currentState = input->GetState();

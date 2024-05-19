@@ -8,6 +8,7 @@ AFullAdder::AFullAdder()
 	SetNodeName("FullAdder");
 	
 	SetHasOutputNode(true);
+	SetHasOutputY(true);
 	outputSumState_ = DISABLED;
 	outputCarryState_ = DISABLED;
 	inputCarryState_ = DISABLED;
@@ -54,10 +55,21 @@ AFullAdder::AFullAdder()
 	OutputCableX = CreateDefaultSubobject<UCableComponent>("AdderOutputCableX");
 	OutputCableX->AttachToComponent(CableConnector, FAttachmentTransformRules::KeepWorldTransform);
 	OutputCableX->SetAttachEndTo(this, "Cable Component"); // Why the space, I wish I knew...
+	// TODO: Why is this Cable Component and not Cable Connector? 
 	
 	OutputCableY = CreateDefaultSubobject<UCableComponent>("AdderOutputCableY");
 	OutputCableY->AttachToComponent(CableConnectorCarry, FAttachmentTransformRules::KeepWorldTransform);
 	OutputCableY->SetAttachEndTo(this, "Cable Connector Carry"); // Why the space, I wish I knew...
+
+	carryOutNode->SetOutputCableX(OutputCableY);
+	
+	SetCableConnectNumber(GetSerialNumber());
+	SetCableConnectString("Cable Component");
+	SetCableConnectFrom("X");
+
+	SetCableConnectNumber(GetSerialNumber());
+	SetCableConnectString("Cable Component");
+	SetCableConnectFrom("X");
 	
 	SetupMeshes();
 	SetupMaterials();
@@ -329,6 +341,58 @@ eLogicState AFullAdder::GetState() const
 		return xorGateB->GetState();
 	}
 	return DISABLED;
+}
+
+FString AFullAdder::SerializeNode()
+{
+	// Create a JSON array to store node entries
+	//TArray<TSharedPtr<FJsonValue>> connectedNodesArray;
+	//TArray<TSharedPtr<FJsonValue>> observersArray;
+
+	// TODO: Add and implement connections array with pairs of key sttring
+	// could do something like outx,inx but for now is implemented
+	// elsewhere as inx and iny for example
+
+	// Report Transform information
+	FTransform NodeTransform = GetActorTransform();
+	FVector NodePosition = NodeTransform. GetTranslation();
+	FRotator NodeRotation = NodeTransform.Rotator();
+	
+
+	// Create a JSON object to hold the array of nodes
+	TSharedPtr<FJsonObject> RootObject = MakeShareable(new FJsonObject);
+	
+	RootObject->SetStringField(TEXT("nodeName"), GetNodeName());
+	RootObject->SetNumberField(TEXT("serialNumber"), GetSerialNumber());
+
+	TSharedPtr<FJsonObject> PositionObject = MakeShareable(new FJsonObject);
+	PositionObject->SetNumberField(TEXT("x"), NodePosition.X);
+	PositionObject->SetNumberField(TEXT("y"), NodePosition.Y);
+	PositionObject->SetNumberField(TEXT("z"), NodePosition.Z);
+
+	TSharedPtr<FJsonObject> RotationObject = MakeShareable(new FJsonObject);
+	RotationObject->SetNumberField(TEXT("pitch"), NodeRotation.Pitch);
+	RotationObject->SetNumberField(TEXT("yaw"), NodeRotation.Yaw);
+	RotationObject->SetNumberField(TEXT("roll"), NodeRotation.Roll);
+
+	RootObject->SetObjectField(TEXT("position"), PositionObject);
+	RootObject->SetObjectField(TEXT("rotation"), RotationObject);
+
+	/*
+	 * TODO: implement cable serialization. I will need to essentially serialize
+	 * the serialNumber of the endpoint node, and the string for the component name.
+	 * We can use the observers map, with the stored key, to populate the SetEndpoint finctiom
+	 * of the cable (during deserialization)
+	 *
+	 * TODO: save the input key, during the SetInput 
+	 */
+	
+	// Create a writer and write JSON to string
+	FString OutputString;
+	TSharedRef<TJsonWriter<TCHAR>> JsonWriter = TJsonWriterFactory<>::Create(&OutputString);
+	FJsonSerializer::Serialize(RootObject.ToSharedRef(), JsonWriter);
+
+	return OutputString;
 }
 
 void AFullAdder::SetupMeshes()

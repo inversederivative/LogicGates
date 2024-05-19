@@ -44,6 +44,11 @@ public:
 	{
 		IsNodeForOtherNodes = answer;
 	}
+
+	virtual FString SerializeNode() override;
+
+	UFUNCTION(BlueprintCallable)
+	void ResetConnectionsArray();
 	
 protected:
 	UFUNCTION()
@@ -58,8 +63,8 @@ protected:
 	UFUNCTION()
 	void SetupMaterials();
 
-	UFUNCTION()
-	void AnimateButtonPosition();
+	// UFUNCTION()
+	// void AnimateButtonPosition();
 
 private:
 

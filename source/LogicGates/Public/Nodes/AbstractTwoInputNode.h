@@ -59,7 +59,10 @@ public:
 
 	FString SerializeNode() override;
 
-	AAbstractNode* DeserializeNode(FString nodeJson) override;
+	//AAbstractNode* DeserializeNode(FString nodeJson) override;
+
+	UFUNCTION(BlueprintCallable)
+	void ResetConnectionsArray();
 	
 protected:
 
@@ -103,7 +106,7 @@ protected:
 	
 	eLogicState outputState_;
 	//std::list<IObserver*> connectedNodes_;
-	TMap<int, IObserver*> connectedNodesMap_;
+	
 
 	bool IsNodeForOtherNodes;
 };

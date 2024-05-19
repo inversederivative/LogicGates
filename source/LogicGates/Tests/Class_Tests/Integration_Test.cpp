@@ -2,10 +2,10 @@
 #include "Nodes/DisplayOutput.h"
 #include "Nodes/LogicGates/AndGate.h"
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(Integration_Tests, "LogicGates.Integration_Test", EAutomationTestFlags::ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(Integration_Test, "LogicGates.Integration_Test", EAutomationTestFlags::ApplicationContextMask | EAutomationTestFlags::ProductFilter)
 
 
-bool Integration_Tests::RunTest(const FString& Parameters)
+bool Integration_Test::RunTest(const FString& Parameters)
 {
 	// Implement your test logic here
 	// Return true if the test passes, false otherwise

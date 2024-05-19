@@ -12,6 +12,19 @@
 #include "LogicGates/Interfaces/NodeInterface.h"
 #include "AbstractNode.generated.h"
 
+
+USTRUCT(BlueprintType)
+struct FKeyValuePair
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "KeyValue")
+	int32 Key;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "KeyValue")
+	FString Value;
+};
+
 UCLASS(Blueprintable)
 class LOGICGATES_API AAbstractNode : public AActor, public ISubject, public IObserver
 {
@@ -46,8 +59,8 @@ public:
 	 * @param observer 
 	 */
 	void Attach(IObserver *observer) override {
-		//observers_.push_back(observer);
-		observersMap_.Add(Cast<AAbstractNode>(observer)->GetSerialNumber(), observer);
+		observers_.push_back(observer);
+		//observersMap_.Add(Cast<AAbstractNode>(observer)->GetSerialNumber(), observer);
 		
 	}
 
@@ -57,8 +70,8 @@ public:
 	 * @param observer 
 	 */
 	void Detach(IObserver *observer) override{
-		//observers_.remove(observer);
-		observersMap_.Remove(Cast<AAbstractNode>(observer)->GetSerialNumber());
+		observers_.remove(observer);
+		//observersMap_.Remove(Cast<AAbstractNode>(observer)->GetSerialNumber());
 	}
 
 	/**
@@ -69,9 +82,9 @@ public:
 		// for (auto observer : observers_) {
 		// 	observer->Update(GetState());
 		// }
-		for (auto observer : observersMap_)
+		for (auto observer : observers_) //observersMap_)
 		{
-			observer.Value->Update(GetState());
+			observer->Update(GetState());
 		}
 	}
 
@@ -97,15 +110,15 @@ public:
 		OutputCableY = cable;
 	}
 	
-	// std::list<IObserver*> GetObservers()
-	// {
-	// 	return observers_;
-	// }
-
-	TMap<int, IObserver*> GetObserversMap()
+	std::list<IObserver*> GetObservers()
 	{
-		return observersMap_;
+		return observers_;
 	}
+
+	// TMap<int, IObserver*> GetObserversMap()
+	// {
+	//	return observersMap_;
+	// }
 
 	int GetNumOfConnectedOutputNodes() const
 	{
@@ -122,6 +135,7 @@ public:
 		NumOfConnectedOutputNodes--;
 	}
 
+	UFUNCTION(BlueprintCallable)
 	bool GetHasOutputNode() const
 	{
 		return HasOutputNode;
@@ -130,6 +144,16 @@ public:
 	void SetHasOutputNode(bool outputNode)
 	{
 		HasOutputNode = outputNode;
+	}
+
+	bool GetHasOutputY() const
+	{
+		return HasOutputY;
+	}
+
+	void SetHasOutputY(bool outputNode)
+	{
+		HasOutputY = outputNode;
 	}
 
 	UStaticMeshComponent* GetNodeMesh() const
@@ -169,54 +193,179 @@ public:
 	}
 
 	UFUNCTION(BlueprintCallable)
-	virtual FString SerializeNode()  PURE_VIRTUAL(AAbstractNode::SerializeNode, return "";);
+	virtual FString SerializeNode() PURE_VIRTUAL(AAbstractNode::SerializeNode, return "";);
+	// {
+	// 	// Create a JSON array to store node entries
+	// 	TArray<TSharedPtr<FJsonValue>> connectedNodesArray;
+	// 	TArray<TSharedPtr<FJsonValue>> observersArray;
+	// 	
+	//
+	// 	// Iterate through each item in the map
+	// 	for (const auto& Pair : connectedNodesMap_)
+	// 	{
+	// 		// Create a JSON object for each node
+	// 		TSharedPtr<FJsonObject> NodeObject = MakeShareable(new FJsonObject);
+	// 		NodeObject->SetNumberField(TEXT("serialNumber"), Pair.Key);
+	// 		NodeObject->SetStringField(TEXT("nodeName"), Cast<AAbstractNode>(Pair.Value)->GetNodeName());
+	//
+	// 		// Add the node object to the array
+	// 		TSharedPtr<FJsonValueObject> NodeJsonValue = MakeShareable(new FJsonValueObject(NodeObject));
+	// 		connectedNodesArray.Add(NodeJsonValue);
+	// 	}
+	//
+	// 	for (const auto& Pair : observersMap_)
+	// 	{
+	// 		// Create a JSON object for each node
+	// 		TSharedPtr<FJsonObject> NodeObject = MakeShareable(new FJsonObject);
+	// 		NodeObject->SetNumberField(TEXT("serialNumber"), Pair.Key);
+	// 		NodeObject->SetStringField(TEXT("nodeName"), Cast<AAbstractNode>(Pair.Value)->GetNodeName());
+	//
+	// 		// Add the node object to the array
+	// 		TSharedPtr<FJsonValueObject> NodeJsonValue = MakeShareable(new FJsonValueObject(NodeObject));
+	// 		observersArray.Add(NodeJsonValue);
+	// 	}
+	//
+	// 	// Report Transform information
+	// 	FTransform NodeTransform = GetActorTransform();
+	// 	FVector NodePosition = NodeTransform. GetTranslation();
+	// 	FRotator NodeRotation = NodeTransform.Rotator();
+	// 	
+	// 	// Create a JSON object to hold the array of nodes
+	// 	TSharedPtr<FJsonObject> RootObject = MakeShareable(new FJsonObject);
+	// 	RootObject->SetStringField(TEXT("nodeName"), GetNodeName());
+	// 	RootObject->SetNumberField(TEXT("serialNumber"), GetSerialNumber());
+	//
+	// 	if (auto twoInputNode = Cast<AAbstractTwoInputNode>(this))
+	// 	{
+	// 		if (twoInputNode->GetInputX())
+	// 		{
+	// 			RootObject->SetNumberField(TEXT("inputX"),
+	// 			twoInputNode->GetInputX()->GetSerialNumber());
+	// 		}
+	// 		if (twoInputNode->GetInputY())
+	// 		{
+	// 			RootObject->SetNumberField(TEXT("inputY"),
+	// 			twoInputNode->GetInputY()->GetSerialNumber());
+	// 		}
+	// 		
+	// 		
+	// 	}
+	// 	
+	// 	TSharedPtr<FJsonObject> PositionObject = MakeShareable(new FJsonObject);
+	// 	PositionObject->SetNumberField(TEXT("x"), NodePosition.X);
+	// 	PositionObject->SetNumberField(TEXT("y"), NodePosition.Y);
+	// 	PositionObject->SetNumberField(TEXT("z"), NodePosition.Z);
+	//
+	// 	TSharedPtr<FJsonObject> RotationObject = MakeShareable(new FJsonObject);
+	// 	RotationObject->SetNumberField(TEXT("pitch"), NodeRotation.Pitch);
+	// 	RotationObject->SetNumberField(TEXT("yaw"), NodeRotation.Yaw);
+	// 	RotationObject->SetNumberField(TEXT("roll"), NodeRotation.Roll);
+	//
+	// 	RootObject->SetObjectField(TEXT("position"), PositionObject);
+	// 	RootObject->SetObjectField(TEXT("rotation"), RotationObject);
+	// 	RootObject->SetArrayField(TEXT("connectedNodes"), connectedNodesArray);
+	// 	RootObject->SetArrayField(TEXT("observers"), observersArray);
+	// 	
+	// 	// Create a writer and write JSON to string
+	// 	FString OutputString;
+	// 	TSharedRef<TJsonWriter<TCHAR>> JsonWriter = TJsonWriterFactory<>::Create(&OutputString);
+	// 	FJsonSerializer::Serialize(RootObject.ToSharedRef(), JsonWriter);
+	//
+	// 	return OutputString;
+	// }
 
 	UFUNCTION(BlueprintCallable)
 	virtual AAbstractNode* DeserializeNode(FString nodeJson)  PURE_VIRTUAL(AAbstractNode::DeserializeNode, return nullptr;);
-
-
-	FString ReadStringFromFile(FString FilePath, bool& bOutSuccess, FString& OutInfoMessage)
+	
+	UFUNCTION(BlueprintCallable)
+	int GetCableConnectNumber() const
 	{
-		if (!FPlatformFileManager::Get().GetPlatformFile().FileExists(*FilePath))
-		{
-			bOutSuccess = false;
-			OutInfoMessage = FString::Printf(TEXT("Read String From File Failed - File doesn't exist - '%s'"), *FilePath);
-			return "";
-		}
-
-		FString RetString = "";
-
-		// Try to read the file. Output goes into RetString
-
-		if (!FFileHelper::LoadFileToString(RetString, *FilePath))
-		{
-			bOutSuccess = false;
-			OutInfoMessage = FString::Printf(TEXT("Read String From File Faild - Was not able to read file. Is this a text file? - '%s'"), *FilePath);
-			return "";
-		}
-
-		bOutSuccess = true;
-		OutInfoMessage = FString::Printf(TEXT("Read String From File Succeeded - '%s'"), *FilePath);
-		return RetString;
+		return CableConnectNumber;
+	}
+	
+	void SetCableConnectNumber(int number)
+	{
+		CableConnectNumber = number;
 	}
 
-	void WriteSTringToFile(FString FilePath, FString String, bool& bOutSuccess, FString& OutInfoMessage)
+	UFUNCTION(BlueprintCallable)
+	FString GetCableConnectString() const
 	{
-		if (!FFileHelper::SaveStringToFile(String, *FilePath))
-		{
-			bOutSuccess = false;
-			OutInfoMessage = FString::Printf(TEXT("Write String To File Failed - Was not able to write to file. Is your file read only? Is the path valid? - '%s'"), *FilePath);
-			return; // Not necessary?
-		}
+		return CableConnectString;
+	}
+	
+	void SetCableConnectString(FString cableConnect)
+	{
+		CableConnectString = cableConnect;
+	}
 
-		bOutSuccess = true;
-		OutInfoMessage = FString::Printf(TEXT("Write String To File Succeeded - '%s'"), *FilePath);
+	UFUNCTION(BlueprintCallable)
+	FString GetCableConnectFrom() const
+	{
+		return CableConnectFrom;
+	}
+
+	void SetCableConnectFrom(FString xOrY)
+	{
+		CableConnectFrom = xOrY;
+	}
+
+	UFUNCTION(BlueprintCallable)
+	int GetDeserializationNumber() const
+	{
+		return DeserializationNumber;
+	}
+
+	UFUNCTION(BlueprintCallable)
+	void SetDeserializationNumber(int number) 
+	{
+		DeserializationNumber = number;
+	}
+
+	UFUNCTION(BlueprintCallable)
+	TArray<FKeyValuePair> GetConnectionSerializationArray() const
+	{
+		return ConnectionSerializationArray;
+	}
+
+	UFUNCTION(BlueprintCallable)
+	void SetConnectionSerializationArray(TArray<FKeyValuePair> connectionsArray)
+	{
+		ConnectionSerializationArray = connectionsArray;
+	}
+
+	UFUNCTION(BlueprintCallable)
+	void AddNodeToConnectionSerializationArray(int indexKey, FString xOrY)
+	{
+		FKeyValuePair pair;
+		pair.Key = indexKey;
+		pair.Value = xOrY;
+		ConnectionSerializationArray.Add(pair);
+	}
+
+	UFUNCTION(BlueprintCallable)
+	void AddNodeToConnectionSerializationArrayKV(FKeyValuePair kvPair)
+	{
+		ConnectionSerializationArray.Add(kvPair);
+	}
+	
+	FString GetToInputXorY() const
+	{
+		return ToInputXorY;
+	}
+
+	void SetToInputXorY(FString xOrY)
+	{
+		ToInputXorY = xOrY;
 	}
 	
 protected:
 
-	//std::list<IObserver*> observers_;
-	TMap<int, IObserver*> observersMap_;
+	std::list<IObserver*> observers_;
+	std::list<IObserver*> connectedNodes_;
+
+	//TMap<int, IObserver*> observersMap_;
+	//TMap<int, IObserver*> connectedNodesMap_;
 
 	// TODO: Make these private, and create abstract Getters and Setters
 	// TODO: Find a way to make them private? I set them in a child class, so maybe they need to be protected.
@@ -252,18 +401,34 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Serialization", meta = (AllowPrivateAccess = "true"))
 	int SerialNumber;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Serialization", meta = (AllowPrivateAccess = "true"))
+	int DeserializationNumber;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Serialization", meta = (AllowPrivateAccess = "true"))
+	TArray<FKeyValuePair> ConnectionSerializationArray;
 	
 private:
 	
 	bool HasOutputNode = false;
+
+	bool HasOutputY = false;
 
 	// TODO: Remove, not used.
 	int NumOfConnectedOutputNodes = 0;
 	
 	eLogicState OutputState;
 
-	
+	int CableConnectNumber;
 
+	FString CableConnectString;
+
+	FString CableConnectFrom;
+
+	FString ToInputXorY;
+
+	//TArray<TPair<int, FString>> ConnectionSerializationArray;
+	
 	static int NextSerialNumber;
 };
 

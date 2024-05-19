@@ -11,6 +11,8 @@ APowerSource::APowerSource()
 	SetNodeName("PowerSource");
 	
 	SetHasOutputNode(true);
+
+	SetDeserializationNumber(SerialNumber);
 	
 	PowerSourceSceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("PowerSource SceneComponent"));
 	RootComponent = PowerSourceSceneComponent;
@@ -36,6 +38,10 @@ APowerSource::APowerSource()
 	//      May as well name with spaces as well, but that's for later. ????????
 	OutputCableX->SetAttachEndTo(this, "Cable Connector");
 	//OutputCableX->SetAttachEndToComponent(CableConnector); // Attaches cable end to self.
+
+	SetCableConnectNumber(GetSerialNumber());
+	SetCableConnectString("Cable Connector");
+	SetCableConnectFrom("X");
 
 	// Assign meshes for Switch, Button, and Connector
 	// Then setup the three materials for Disabled (Black), Off (Red), and On (Green)
@@ -91,20 +97,20 @@ void APowerSource::ChangeState(eLogicState state) {
 		{
 			UE_LOG(LogTemp, Display, TEXT("****The state was changed. The current state is: Disabled"));
 			ConnectionMesh->SetMaterial(0, DisabledMaterial);
-			AnimateButtonPosition();
+			//AnimateButtonPosition();
 		}
 		if (state == OFF)
 		{
 		
 			UE_LOG(LogTemp, Display, TEXT("****The state was changed. The current state is: Off"));
 			ConnectionMesh->SetMaterial(0, OffMaterial);
-			AnimateButtonPosition();
+			//AnimateButtonPosition();
 		}
 		if (state == ON)
 		{
 			UE_LOG(LogTemp, Display, TEXT("****The state was changed. The current state is: On"));
 			ConnectionMesh->SetMaterial(0, OnMaterial);
-			AnimateButtonPosition();
+			//AnimateButtonPosition();
 		}
 	}
 	
@@ -133,6 +139,107 @@ void APowerSource::ToggleState() {
 
 eLogicState APowerSource::GetState() const {
 	return state_;
+}
+
+// TODO: We need to do virtually everything the same, except we save the state of the power sources.
+FString APowerSource::SerializeNode()
+{
+	// Create a JSON array to store node entries
+	TArray<TSharedPtr<FJsonValue>> connectionsArray;
+
+	for (const auto& Pair : GetConnectionSerializationArray())
+	{
+		// Create a JSON object for each node
+		TSharedPtr<FJsonObject> NodeObject = MakeShareable(new FJsonObject);
+		NodeObject->SetNumberField(TEXT("serialNumber"), Pair.Key);
+		NodeObject->SetStringField(TEXT("xOrY"), Pair.Value);
+
+		// Add the node object to the array
+		TSharedPtr<FJsonValueObject> NodeJsonValue = MakeShareable(new FJsonValueObject(NodeObject));
+		connectionsArray.Add(NodeJsonValue);
+	}
+
+	// Report Transform information
+	FTransform NodeTransform = GetActorTransform();
+	FVector NodePosition = NodeTransform. GetTranslation();
+	FRotator NodeRotation = NodeTransform.Rotator();
+	
+
+	// Create a JSON object to hold the array of nodes
+	TSharedPtr<FJsonObject> RootObject = MakeShareable(new FJsonObject);
+
+	RootObject->SetStringField(TEXT("nodeName"), GetNodeName());
+	RootObject->SetNumberField(TEXT("serialNumber"), GetSerialNumber());
+
+	switch (GetState())
+	{
+	case DISABLED:
+		RootObject->SetStringField(TEXT("powerSourceState"), "DISABLED");
+		break;
+	case OFF:
+		RootObject->SetStringField(TEXT("powerSourceState"), "OFF");
+		break;
+	case ON:
+		RootObject->SetStringField(TEXT("powerSourceState"), "ON");
+		break;
+	}
+	
+
+	TSharedPtr<FJsonObject> PositionObject = MakeShareable(new FJsonObject);
+	PositionObject->SetNumberField(TEXT("x"), NodePosition.X);
+	PositionObject->SetNumberField(TEXT("y"), NodePosition.Y);
+	PositionObject->SetNumberField(TEXT("z"), NodePosition.Z);
+
+	TSharedPtr<FJsonObject> RotationObject = MakeShareable(new FJsonObject);
+	RotationObject->SetNumberField(TEXT("pitch"), NodeRotation.Pitch);
+	RotationObject->SetNumberField(TEXT("yaw"), NodeRotation.Yaw);
+	RotationObject->SetNumberField(TEXT("roll"), NodeRotation.Roll);
+
+	RootObject->SetObjectField(TEXT("position"), PositionObject);
+	RootObject->SetObjectField(TEXT("rotation"), RotationObject);
+	RootObject->SetArrayField(TEXT("connections"), connectionsArray);
+
+	/*
+	 * TODO: implement cable serialization. I will need to essentially serialize
+	 * the serialNumber of the endpoint node, and the string for the component name.
+	 * We can use the observers map, with the stored key, to populate the SetEndpoint finctiom
+	 * of the cable (during deserialization)
+	 *
+	 * TODO: save the input key, during the SetInput 
+	 */
+	
+	// Create a writer and write JSON to string
+	FString OutputString;
+	TSharedRef<TJsonWriter<TCHAR>> JsonWriter = TJsonWriterFactory<>::Create(&OutputString);
+	FJsonSerializer::Serialize(RootObject.ToSharedRef(), JsonWriter);
+
+	return OutputString;
+}
+
+void APowerSource::ResetConnectionsArray()
+{
+	//ConnectionSerializationArray = {};
+
+	int index = 0;
+	TArray<FKeyValuePair> tempArray;
+	for (auto output : GetObservers())
+	{
+		while (index < GetObservers().size())
+		{
+			auto absNode = Cast<AAbstractNode>(output);
+			int oldSerial = absNode->GetDeserializationNumber();
+			FKeyValuePair pair;
+			
+			if (ConnectionSerializationArray[index].Key == oldSerial)
+			{
+				pair.Key = absNode->GetSerialNumber();
+				pair.Value = ConnectionSerializationArray[index].Value;
+				tempArray.Add(pair);
+			}
+			index++;
+		}
+	}
+	SetConnectionSerializationArray(tempArray);
 }
 
 void APowerSource::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
@@ -252,52 +359,52 @@ void APowerSource::SetupMaterials()
 
 // Function to animate the position of the button mesh
 // TODO: Remove this function. We don't need this animation, and it doesn't work anyways.
-void APowerSource::AnimateButtonPosition()
-{
-    // Define animation parameters
-	// Duration of animation in seconds
-    FVector InitialPosition = ButtonMesh->GetRelativeLocation();
-    FVector TargetPosition = InitialPosition + FVector(10.0f, 0.0f, 0.0f); // Increment X by 10 units
-
-    // Start the animation
-    GetWorldTimerManager().SetTimer(TimerHandle, [this, InitialPosition, TargetPosition]()
-    {
-        float ElapsedTime = 0.0f;
-
-        // Update button position smoothly over time
-        while (ElapsedTime < AnimationDuration)
-        {
-            // Interpolate between initial and target positions
-            FVector NewPosition = FMath::Lerp(InitialPosition, TargetPosition, ElapsedTime / AnimationDuration);
-            ButtonMesh->SetRelativeLocation(NewPosition);
-
-            // Update elapsed time
-            ElapsedTime += GetWorld()->GetDeltaSeconds();
-        }
-
-        // Ensure the button reaches the target position
-        ButtonMesh->SetRelativeLocation(TargetPosition);
-
-        // Reverse animation by decrementing X by 10 units
-        GetWorldTimerManager().SetTimer(TimerHandle, [this, TargetPosition]()
-        {
-            float ElapsedTime = 0.0f;
-            FVector InitialPosition = TargetPosition;
-            FVector ReverseTargetPosition = InitialPosition - FVector(10.0f, 0.0f, 0.0f); // Decrement X by 10 units
-
-            // Update button position smoothly over time
-            while (ElapsedTime < AnimationDuration)
-            {
-                // Interpolate between initial and reverse target positions
-                FVector NewPosition = FMath::Lerp(InitialPosition, ReverseTargetPosition, ElapsedTime / AnimationDuration);
-                ButtonMesh->SetRelativeLocation(NewPosition);
-
-                // Update elapsed time
-                ElapsedTime += GetWorld()->GetDeltaSeconds();
-            }
-
-            // Ensure the button reaches the reverse target position
-            ButtonMesh->SetRelativeLocation(ReverseTargetPosition);
-        }, AnimationDuration, false);
-    }, 0.0f, false);
-}
+// void APowerSource::AnimateButtonPosition()
+// {
+//     // Define animation parameters
+// 	// Duration of animation in seconds
+//     FVector InitialPosition = ButtonMesh->GetRelativeLocation();
+//     FVector TargetPosition = InitialPosition + FVector(10.0f, 0.0f, 0.0f); // Increment X by 10 units
+//
+//     // Start the animation
+//     GetWorldTimerManager().SetTimer(TimerHandle, [this, InitialPosition, TargetPosition]()
+//     {
+//         float ElapsedTime = 0.0f;
+//
+//         // Update button position smoothly over time
+//         while (ElapsedTime < AnimationDuration)
+//         {
+//             // Interpolate between initial and target positions
+//             FVector NewPosition = FMath::Lerp(InitialPosition, TargetPosition, ElapsedTime / AnimationDuration);
+//             ButtonMesh->SetRelativeLocation(NewPosition);
+//
+//             // Update elapsed time
+//             ElapsedTime += GetWorld()->GetDeltaSeconds();
+//         }
+//
+//         // Ensure the button reaches the target position
+//         ButtonMesh->SetRelativeLocation(TargetPosition);
+//
+//         // Reverse animation by decrementing X by 10 units
+//         GetWorldTimerManager().SetTimer(TimerHandle, [this, TargetPosition]()
+//         {
+//             float ElapsedTime = 0.0f;
+//             FVector InitialPosition = TargetPosition;
+//             FVector ReverseTargetPosition = InitialPosition - FVector(10.0f, 0.0f, 0.0f); // Decrement X by 10 units
+//
+//             // Update button position smoothly over time
+//             while (ElapsedTime < AnimationDuration)
+//             {
+//                 // Interpolate between initial and reverse target positions
+//                 FVector NewPosition = FMath::Lerp(InitialPosition, ReverseTargetPosition, ElapsedTime / AnimationDuration);
+//                 ButtonMesh->SetRelativeLocation(NewPosition);
+//
+//                 // Update elapsed time
+//                 ElapsedTime += GetWorld()->GetDeltaSeconds();
+//             }
+//
+//             // Ensure the button reaches the reverse target position
+//             ButtonMesh->SetRelativeLocation(ReverseTargetPosition);
+//         }, AnimationDuration, false);
+//     }, 0.0f, false);
+// }

@@ -6,6 +6,7 @@ public class LogicGates : ModuleRules
 {
 	public LogicGates(ReadOnlyTargetRules Target) : base(Target)
 	{
+		PrivateDependencyModuleNames.AddRange(new string[] { "AITestSuite" });
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
 		PublicDependencyModuleNames.AddRange(new string[]
@@ -16,7 +17,7 @@ public class LogicGates : ModuleRules
 			"InputCore", 
 			"EnhancedInput", 
 			"CableComponent",
-			"Json"	
+			"Json"
 		});
 	}
 }

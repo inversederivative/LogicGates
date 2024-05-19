@@ -77,6 +77,8 @@ public:
 	{
 		fromOutputY = outputY;
 	}
+
+	virtual FString SerializeNode() override;
 	
 protected:
 

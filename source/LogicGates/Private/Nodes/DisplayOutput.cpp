@@ -10,6 +10,8 @@
 {
 
  	SetNodeName("DisplayOutput");
+
+ 	SetDeserializationNumber(SerialNumber);
  	
 	// Set default mesh
 
@@ -49,8 +51,9 @@
 	CollisionSphere->SetSphereRadius(100.0f); // Set the radius of the collision sphere
 	CollisionSphere->SetupAttachment(RootComponent);
 
-	OutputCableX = CreateDefaultSubobject<UCableComponent>("DisplayConnected");
- 	OutputCableX->AttachToComponent(CableConnector, FAttachmentTransformRules::KeepWorldTransform);
+ 	//OutputCableX = nullptr; // Display has NO output cable!!!
+ 	OutputCableX = CreateDefaultSubobject<UCableComponent>("DisplayConnected");
+    OutputCableX->AttachToComponent(CableConnector, FAttachmentTransformRules::KeepWorldTransform);
  	OutputCableX->SetAttachEndToComponent(CableConnector);
  	OutputCableX->SetupAttachment(RootComponent);
  	OutputCableX->SetVisibility(false);
@@ -72,15 +75,21 @@ void ADisplayOutput::SetInput(AAbstractNode *input) {
 
  	if (auto fullAdder = Cast<AFullAdder>(input))
  	{
- 		if (fullAdder->GetFromOutputY())
+ 		if (fullAdder->GetFromOutputY()) // TODO: What if we pass from output Y first, then OutputX. Hmm...
  		{
  			input_ = fullAdder->GetCarryOutNode();
  			fullAdder->GetOutputCableY()->SetAttachEndTo(this, "InputPort");
+ 			fullAdder->SetCableConnectNumber(this->GetSerialNumber());
+ 			fullAdder->SetCableConnectString("InputPort");
+
+ 			// TODO: handle the serialization of an output Y cable... This only helps for output X, right?
  		}
  		else
  		{
  			input_= input;
  			input_->GetOutputCableX()->SetAttachEndTo(this, "InputPort");
+ 			input_->SetCableConnectNumber(this->GetSerialNumber());
+ 			input_->SetCableConnectString("InputPort");
  		}
  	}
  	else
@@ -90,7 +99,7 @@ void ADisplayOutput::SetInput(AAbstractNode *input) {
  	}
  	
 	input_->Attach(this);
- 	connectedNodesMap_.Add(input->GetSerialNumber(), input);
+ 	connectedNodes_.push_back(input);
  	
 	eLogicState currentState = input_->GetState();
 	if (currentState == DISABLED)
@@ -138,6 +147,40 @@ void ADisplayOutput::Update(eLogicState state) {
 	}
 	
 	Notify();
+}
+
+FString ADisplayOutput::SerializeNode()
+{
+
+	// Report Transform information
+	FTransform NodeTransform = GetActorTransform();
+	FVector NodePosition = NodeTransform. GetTranslation();
+	FRotator NodeRotation = NodeTransform.Rotator();
+	
+	// Create a JSON object to hold the array of nodes
+	TSharedPtr<FJsonObject> RootObject = MakeShareable(new FJsonObject);
+	RootObject->SetStringField(TEXT("nodeName"), GetNodeName());
+	RootObject->SetNumberField(TEXT("serialNumber"), GetSerialNumber());
+	
+	TSharedPtr<FJsonObject> PositionObject = MakeShareable(new FJsonObject);
+	PositionObject->SetNumberField(TEXT("x"), NodePosition.X);
+	PositionObject->SetNumberField(TEXT("y"), NodePosition.Y);
+	PositionObject->SetNumberField(TEXT("z"), NodePosition.Z);
+
+	TSharedPtr<FJsonObject> RotationObject = MakeShareable(new FJsonObject);
+	RotationObject->SetNumberField(TEXT("pitch"), NodeRotation.Pitch);
+	RotationObject->SetNumberField(TEXT("yaw"), NodeRotation.Yaw);
+	RotationObject->SetNumberField(TEXT("roll"), NodeRotation.Roll);
+
+	RootObject->SetObjectField(TEXT("position"), PositionObject);
+	RootObject->SetObjectField(TEXT("rotation"), RotationObject);
+	
+	// Create a writer and write JSON to string
+	FString OutputString;
+	TSharedRef<TJsonWriter<TCHAR>> JsonWriter = TJsonWriterFactory<>::Create(&OutputString);
+	FJsonSerializer::Serialize(RootObject.ToSharedRef(), JsonWriter);
+
+	return OutputString;
 }
 
  // TODO: Remove Log messages from Meshes

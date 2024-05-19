@@ -1,10 +1,11 @@
 ﻿#include "Nodes/DisplayOutput.h"
 #include "Nodes/PowerSource.h"
+
 #include "Nodes/LogicGates/AndGate.h"
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(TwoInputNode_ToJSON_Tests, "LogicGates.TwoInputNode_ToJSON_Test", EAutomationTestFlags::ApplicationContextMask | EAutomationTestFlags::ProductFilter)
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(TwoInputNode_ToJSON_Test, "LogicGates.TwoInputNode_ToJSON_Test", EAutomationTestFlags::ApplicationContextMask | EAutomationTestFlags::ProductFilter)
 
-bool TwoInputNode_ToJSON_Tests::RunTest(const FString& Parameters)
+bool TwoInputNode_ToJSON_Test::RunTest(const FString& Parameters)
 {
 	// Implement your test logic here
 	// Return true if the test passes, false otherwise
@@ -17,10 +18,13 @@ bool TwoInputNode_ToJSON_Tests::RunTest(const FString& Parameters)
 	AAndGate* AndGate = NewObject<AAndGate>();
 	AndGate->SetInputX(switch1);
 	AndGate->SetInputY(switch2);
+
+	ADisplayOutput* DisplayOutput = NewObject<ADisplayOutput>();
+	DisplayOutput->SetInput(AndGate);
 	
 	FString result = AndGate->SerializeNode();
 
-	UE_LOG(LogTemp, Display, TEXT("****Actual result - '%s'"), *result);
+	UE_LOG(LogTemp, Display, TEXT("****Actual result - \n %s\n"), *result);
 
 	FString expected = FString::Printf(TEXT("{\n\t\"serialNumber\": %d,\n\t\"nodeName\": \"AndGate\"\n}"), AndGate->GetSerialNumber());
 
