@@ -17,6 +17,9 @@
 #include "Nodes/AbstractTwoInputNode.h"
 #include "Nodes/Adders/FullAdder.h"
 #include "Nodes/LogicGates/TriStateBufferGate.h"
+#include "Misc/FileHelper.h"
+#include "HAL/FileManager.h"
+#include "Misc/Paths.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -82,6 +85,19 @@ FString ALogicGatesCharacter::SerializeAllNodes(const TArray<AAbstractNode*>& Al
 	// Iterate through each node
 	for (AAbstractNode* Node : AllNodes)
 	{
+		if (Node->GetNodeName() == "BufferGate")
+		{
+			continue;
+		}
+		auto twoOut = Cast<AAbstractTwoInputNode>(Node);
+		if (twoOut)
+		{
+			if (twoOut->GetNodeName() == "Internal")
+			{
+				continue;
+			}
+		}
+		
 		FString NodeJson = Node->SerializeNode();
 		TSharedPtr<FJsonObject> NodeJsonObject;
 		TSharedRef<TJsonReader<>> JsonReader = TJsonReaderFactory<>::Create(NodeJson);
@@ -283,103 +299,6 @@ if (NewNode)
     return NewNode;
 }
 
-// AAbstractNode* DeserializeNodeFromJsonObject(const TSharedPtr<FJsonObject>& NodeJsonObject)
-// {
-//     // Extract node properties from JSON object
-//     FString NodeName;
-//     int32 SerialNumber = -1; // Set a default value to indicate an error
-//     FVector NodePosition;
-//     FRotator NodeRotation;
-//
-//     // Deserialize basic properties
-//     NodeJsonObject->TryGetStringField(TEXT("nodeName"), NodeName);
-//     NodeJsonObject->TryGetNumberField(TEXT("serialNumber"), SerialNumber);
-//
-//     // Deserialize position
-//     const TSharedPtr<FJsonObject>* PositionObjectPtr;
-//     if (NodeJsonObject->TryGetObjectField(TEXT("position"), PositionObjectPtr))
-//     {
-//         const TSharedPtr<FJsonObject>& PositionObject = *PositionObjectPtr;
-//         PositionObject->TryGetNumberField(TEXT("x"), NodePosition.X);
-//         PositionObject->TryGetNumberField(TEXT("y"), NodePosition.Y);
-//         PositionObject->TryGetNumberField(TEXT("z"), NodePosition.Z);
-//     }
-//
-//     // Deserialize rotation
-//     const TSharedPtr<FJsonObject>* RotationObjectPtr;
-//     if (NodeJsonObject->TryGetObjectField(TEXT("rotation"), RotationObjectPtr))
-//     {
-//         const TSharedPtr<FJsonObject>& RotationObject = *RotationObjectPtr;
-//         RotationObject->TryGetNumberField(TEXT("pitch"), NodeRotation.Pitch);
-//         RotationObject->TryGetNumberField(TEXT("yaw"), NodeRotation.Yaw);
-//         RotationObject->TryGetNumberField(TEXT("roll"), NodeRotation.Roll);
-//     }
-//
-//     // Deserialize connected nodes
-//     // const TArray<TSharedPtr<FJsonValue>>* ConnectedNodesArrayPtr;
-//     // if (NodeJsonObject->TryGetArrayField(TEXT("connectedNodes"), ConnectedNodesArrayPtr))
-//     // {
-//     //     for (const auto& ConnectedNodeValue : *ConnectedNodesArrayPtr)
-//     //     {
-//     //         const TSharedPtr<FJsonObject> ConnectedNodeObject = ConnectedNodeValue->AsObject();
-//     //         if (ConnectedNodeObject.IsValid())
-//     //         {
-//     //             FNodeConnection ConnectedNode;
-//     //             ConnectedNodeObject->TryGetNumberField(TEXT("serialNumber"), ConnectedNode.SerialNumber);
-//     //             ConnectedNodeObject->TryGetStringField(TEXT("nodeName"), ConnectedNode.NodeName);
-//     //             ConnectedNodes.Add(ConnectedNode);
-//     //         }
-//     //     }
-//     // }
-//
-//     // Deserialize observers
-//     // const TArray<TSharedPtr<FJsonValue>>* ObserversArrayPtr;
-//     // if (NodeJsonObject->TryGetArrayField(TEXT("observers"), ObserversArrayPtr))
-//     // {
-//     //     for (const auto& ObserverValue : *ObserversArrayPtr)
-//     //     {
-//     //         const TSharedPtr<FJsonObject> ObserverObject = ObserverValue->AsObject();
-//     //         if (ObserverObject.IsValid())
-//     //         {
-//     //             FNodeObserver Observer;
-//     //             ObserverObject->TryGetNumberField(TEXT("serialNumber"), Observer.SerialNumber);
-//     //             ObserverObject->TryGetStringField(TEXT("nodeName"), Observer.NodeName);
-//     //             Observers.Add(Observer);
-//     //         }
-//     //     }
-//     // }
-//
-//     // Create the appropriate node object based on the node name
-//     AAbstractNode* Node = nullptr;
-//     if (NodeName == "DisplayOutput")
-//     {
-//         // Create a DisplayOutput node
-//         Node = NewObject<ADisplayOutput>();
-//     }
-//     else if (NodeName == "PowerSource")
-//     {
-//         // Create a PowerSource node
-//         Node = NewObject<APowerSource>();
-//     }
-//     else if (NodeName == "AndGate")
-//     {
-//         // Create an AndGate node
-//         Node = NewObject<AAndGate>();
-//     }
-//     // Add more conditions for other node types as needed
-//
-//     // Set properties of the created node
-//     if (Node)
-//     {
-//         Node->SetNodeName(NodeName);
-//         Node->SetDeserializationNumber(SerialNumber);
-//     	Node->SetActorLocation(NodePosition);
-//     	Node->SetActorRotation(NodeRotation);
-//     }
-//
-//     return Node;
-// }
-
 FString SerializeJsonObjectToString(const TSharedPtr<FJsonObject>& NodeJsonObject)
 {
 	FString OutputString;
@@ -395,6 +314,56 @@ FString SerializeJsonObjectToString(const TSharedPtr<FJsonObject>& NodeJsonObjec
 	return OutputString;
 }
 
+TArray<FString> ALogicGatesCharacter::GetSavedFiles(const FString& directoryPath)
+{
+	TArray<FString> JsonFiles;
+	TArray<FString> SortedJsonFiles;
+    
+	// Ensure the directory path is valid
+	if (!FPaths::DirectoryExists(directoryPath))
+	{
+		return SortedJsonFiles; // Return empty array if directory doesn't exist
+	}
+    
+	// Get the JSON files in the directory
+	IFileManager& FileManager = IFileManager::Get();
+	FileManager.FindFiles(JsonFiles, *(directoryPath / TEXT("*.json")), true, false);
+    
+	// Struct to hold file info
+	struct FFileInfo
+	{
+		FString FileName;
+		FDateTime CreationDate;
+	};
+    
+	TArray<FFileInfo> FileInfos;
+    
+	for (const FString& JsonFile : JsonFiles)
+	{
+		FString FullFilePath = directoryPath / JsonFile;
+		FFileStatData StatData = FileManager.GetStatData(*FullFilePath);
+        
+		if (StatData.bIsValid)
+		{
+			FileInfos.Add({JsonFile, StatData.CreationTime});
+		}
+	}
+    
+	// Sort the files by creation date in descending order
+	FileInfos.Sort([](const FFileInfo& A, const FFileInfo& B)
+	{
+		return A.CreationDate > B.CreationDate;
+	});
+    
+	// Extract sorted filenames without the .json extension
+	for (const FFileInfo& FileInfo : FileInfos)
+	{
+		FString FileNameWithoutExtension = FPaths::GetBaseFilename(FileInfo.FileName);
+		SortedJsonFiles.Add(FileNameWithoutExtension);
+	}
+    
+	return SortedJsonFiles;
+}
 
 TMap<int, AAbstractNode*> ALogicGatesCharacter::DeserializeAllNodes(FString fullJson)
 {
@@ -414,23 +383,6 @@ TMap<int, AAbstractNode*> ALogicGatesCharacter::DeserializeAllNodes(FString full
 			{
 				NodeArray = FoundArray;
 				// Process the array
-
-				// Iterate over each node entry in the JSON array
-				// for (const auto& NodeValue : NodeArray)
-				// {
-				// 	// Deserialize the node from JSON
-				// 	FString NodeJsonString = NodeValue->AsString();
-				// 	AAbstractNode* Node = DeserializeNode(NodeJsonString);
-				//
-				// 	// If deserialization was successful, add the node to the map
-				// 	if (Node)
-				// 	{
-				// 		// Retrieve DeserializationNumber from the node and use it as the key
-				// 		int32 DeserializationNumber = Node->GetDeserializationNumber();
-				// 		NodeMap.Add(DeserializationNumber, Node);
-				// 	}
-				// }
-
 				for (const auto& NodeValue : NodeArray)
 				{
 					// Get the JSON object representing a node
@@ -458,8 +410,6 @@ TMap<int, AAbstractNode*> ALogicGatesCharacter::DeserializeAllNodes(FString full
 
 	return NodeMap;
 }
-
-
 
 void ALogicGatesCharacter::BeginPlay()
 {
@@ -676,23 +626,23 @@ void ALogicGatesCharacter::ConnectToInputX()
 				{
 					auto fullAdder = Cast<AFullAdder>(LastOutputNode);
 					//display->SetInput(fullAdder->GetCarryOutNode());
-					fullAdder->SetCableConnectFrom("Y"); // TODO: Implement x and y output serialization
+					//fullAdder->SetCableConnectFrom("Y"); // TODO: Remove SetCableConnectFrom
 					display->SetInput(fullAdder);
-					fullAdder->AddNodeToConnectionSerializationArray(display->GetSerialNumber(), "X");
+					fullAdder->AddNodeToConnectionSerializationArray(display->GetSerialNumber(), "OutY,InX");
 					IsFromOutputY = false;
 				}
 				else
 				{
 					if (auto fullAdder = Cast<AFullAdder>(LastOutputNode))
 					{
-						fullAdder->SetCableConnectFrom("X");
+						//fullAdder->SetCableConnectFrom("X");
 						display->SetInput(fullAdder);
-						fullAdder->AddNodeToConnectionSerializationArray(display->GetSerialNumber(), "X");
+						fullAdder->AddNodeToConnectionSerializationArray(display->GetSerialNumber(), "OutX,InX");
 					}
 					else
 					{
 						display->SetInput(LastOutputNode);
-						LastOutputNode->AddNodeToConnectionSerializationArray(display->GetSerialNumber(), "X");
+						LastOutputNode->AddNodeToConnectionSerializationArray(display->GetSerialNumber(), "OutX,InX");
 					}
 				}
 				
@@ -704,16 +654,16 @@ void ALogicGatesCharacter::ConnectToInputX()
 				if (IsFromOutputY)
 				{
 					auto fullAdder = Cast<AFullAdder>(LastOutputNode);
-					fullAdder->SetCableConnectFrom("Y"); // TODO: Implement x and y output serialization
+					//fullAdder->SetCableConnectFrom("Y"); // TODO: Implement x and y output serialization
 					twoInputNode->SetInputX(fullAdder->GetCarryOutNode());
-					fullAdder->AddNodeToConnectionSerializationArray(twoInputNode->GetSerialNumber(), "X");
+					fullAdder->AddNodeToConnectionSerializationArray(twoInputNode->GetSerialNumber(), "OutY,InX");
 					IsFromOutputY = false;
 				}
 				else
 				{
-					LastOutputNode->SetCableConnectFrom("X");
+					//LastOutputNode->SetCableConnectFrom("X");
 					twoInputNode->SetInputX(LastOutputNode);
-					LastOutputNode->AddNodeToConnectionSerializationArray(twoInputNode->GetSerialNumber(), "X");
+					LastOutputNode->AddNodeToConnectionSerializationArray(twoInputNode->GetSerialNumber(), "OutX,InX");
 				}
 				ConnectedToHand = false;
 			}
@@ -722,16 +672,16 @@ void ALogicGatesCharacter::ConnectToInputX()
 				if (IsFromOutputY)
 				{
 					auto lastFullAdder = Cast<AFullAdder>(LastOutputNode);
-					lastFullAdder->SetCableConnectFrom("Y");
+					//lastFullAdder->SetCableConnectFrom("Y");
 					currentFullAdder->SetInputX(lastFullAdder->GetCarryOutNode());
-					lastFullAdder->AddNodeToConnectionSerializationArray(currentFullAdder->GetSerialNumber(), "X");
+					lastFullAdder->AddNodeToConnectionSerializationArray(currentFullAdder->GetSerialNumber(), "OutY,InX");
 					IsFromOutputY = false;
 				}
 				else
 				{
-					currentFullAdder->SetCableConnectFrom("X");
+					//currentFullAdder->SetCableConnectFrom("X");
 					currentFullAdder->SetInputX(LastOutputNode);
-					LastOutputNode->AddNodeToConnectionSerializationArray(currentFullAdder->GetSerialNumber(), "X");
+					LastOutputNode->AddNodeToConnectionSerializationArray(currentFullAdder->GetSerialNumber(), "OutX,InX");
 				}
 				ConnectedToHand = false;
 			}
@@ -741,17 +691,17 @@ void ALogicGatesCharacter::ConnectToInputX()
 				if (IsFromOutputY)
 				{
 					auto fullAdder = Cast<AFullAdder>(LastOutputNode);
-					fullAdder->SetCableConnectFrom("Y");
+					//fullAdder->SetCableConnectFrom("Y");
 					triStateNode->SetDataInput(fullAdder->GetCarryOutNode());
 					// We're treating Data as X and Enable as Y
-					fullAdder->AddNodeToConnectionSerializationArray(triStateNode->GetSerialNumber(), "X");
+					fullAdder->AddNodeToConnectionSerializationArray(triStateNode->GetSerialNumber(), "OutY,InX");
 					IsFromOutputY = false;
 				}
 				else
 				{
-					LastOutputNode->SetCableConnectFrom("X");
+					//LastOutputNode->SetCableConnectFrom("X");
 					triStateNode->SetDataInput(LastOutputNode);
-					LastOutputNode->AddNodeToConnectionSerializationArray(triStateNode->GetSerialNumber(), "X");
+					LastOutputNode->AddNodeToConnectionSerializationArray(triStateNode->GetSerialNumber(), "OutX,InX");
 				}
 				ConnectedToHand = false;
 			}
@@ -773,14 +723,14 @@ void ALogicGatesCharacter::ConnectToInputY()
 					auto fullAdder = Cast<AFullAdder>(LastOutputNode);
 					fullAdder->SetCableConnectFrom("Y");
 					twoInputNode->SetInputY(fullAdder->GetCarryOutNode());
-					fullAdder->AddNodeToConnectionSerializationArray(twoInputNode->GetSerialNumber(), "Y");
+					fullAdder->AddNodeToConnectionSerializationArray(twoInputNode->GetSerialNumber(), "OutY,InY");
 					IsFromOutputY = false;
 				}
 				else
 				{
 					LastOutputNode->SetCableConnectFrom("X");
 					twoInputNode->SetInputY(LastOutputNode);
-					LastOutputNode->AddNodeToConnectionSerializationArray(twoInputNode->GetSerialNumber(), "Y");
+					LastOutputNode->AddNodeToConnectionSerializationArray(twoInputNode->GetSerialNumber(), "OutX,InY");
 				}
 			}
 
@@ -789,18 +739,18 @@ void ALogicGatesCharacter::ConnectToInputY()
 				if (IsFromOutputY)
 				{
 					auto lastFullAdder = Cast<AFullAdder>(LastOutputNode);
-					lastFullAdder->SetCableConnectFrom("Y");
+					//lastFullAdder->SetCableConnectFrom("Y");
 					currentFullAdder->SetInputY(lastFullAdder->GetCarryOutNode());
 					// TODO: Implement x and y output serialization
-					lastFullAdder->AddNodeToConnectionSerializationArray(currentFullAdder->GetSerialNumber(), "Y");
+					lastFullAdder->AddNodeToConnectionSerializationArray(currentFullAdder->GetSerialNumber(), "OutY,InY");
 
 					IsFromOutputY = false;
 				}
 				else
 				{
-					currentFullAdder->SetCableConnectFrom("X");
+					//currentFullAdder->SetCableConnectFrom("X");
 					currentFullAdder->SetInputY(LastOutputNode);
-					LastOutputNode->AddNodeToConnectionSerializationArray(currentFullAdder->GetSerialNumber(), "Y");
+					LastOutputNode->AddNodeToConnectionSerializationArray(currentFullAdder->GetSerialNumber(), "OutX,InY");
 				}
 				ConnectedToHand = false;
 			}
@@ -810,18 +760,18 @@ void ALogicGatesCharacter::ConnectToInputY()
 				if (IsFromOutputY)
 				{
 					auto fullAdder = Cast<AFullAdder>(LastOutputNode);
-					fullAdder->SetCableConnectFrom("Y");
+					//fullAdder->SetCableConnectFrom("Y");
 					triStateNode->SetEnableInput(fullAdder->GetCarryOutNode());
 					// We treat input X as Data and input Y as enable
-					fullAdder->AddNodeToConnectionSerializationArray(triStateNode->GetSerialNumber(), "Y");
+					fullAdder->AddNodeToConnectionSerializationArray(triStateNode->GetSerialNumber(), "OutY,InY");
 
 					IsFromOutputY = false;
 				}
 				else
 				{
-					LastOutputNode->SetCableConnectFrom("X");
+					//LastOutputNode->SetCableConnectFrom("X");
 					triStateNode->SetEnableInput(LastOutputNode);
-					LastOutputNode->AddNodeToConnectionSerializationArray(triStateNode->GetSerialNumber(), "Y");
+					LastOutputNode->AddNodeToConnectionSerializationArray(triStateNode->GetSerialNumber(), "OutX,InY");
 				}
 				ConnectedToHand = false;
 			}
@@ -846,11 +796,12 @@ void ALogicGatesCharacter::ConnectToInputZ()
 				
 					if (auto lastFullAdder = Cast<AFullAdder>(CurrentNode))
 					{
-						currentFullAdder->SetCableConnectFrom("Y");
+						//currentFullAdder->SetCableConnectFrom("Y");
 						// We don't give the buffer gate here, while we need reference to the full adder.
 						lastFullAdder->SetInputCarry(currentFullAdder); 
 						ConnectedToHand = false;
 						IsFromOutputY = false;
+						currentFullAdder->AddNodeToConnectionSerializationArray(lastFullAdder->GetSerialNumber(), "OutY,InZ");
 					}
 				}
 			}
@@ -858,9 +809,11 @@ void ALogicGatesCharacter::ConnectToInputZ()
 			{
 				if (auto lastFullAdder = Cast<AFullAdder>(CurrentNode))
 				{
-					LastOutputNode->SetCableConnectFrom("X");
+					//LastOutputNode->SetCableConnectFrom("X");
 					lastFullAdder->SetInputCarry(LastOutputNode);
 					ConnectedToHand = false;
+					LastOutputNode->AddNodeToConnectionSerializationArray(lastFullAdder->GetSerialNumber(), "OutX,InZ");
+					
 				}
 			}
 		}

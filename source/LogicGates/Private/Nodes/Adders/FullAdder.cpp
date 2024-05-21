@@ -26,6 +26,13 @@ AFullAdder::AFullAdder()
 	andGateA->SetIsNodeForOtherNodes(true);
 	andGateB->SetIsNodeForOtherNodes(true);
 	orGate->SetIsNodeForOtherNodes(true);
+
+	xorGateA->SetNodeName("Internal");
+	xorGateB->SetNodeName("Internal");
+	andGateA->SetNodeName("Internal");
+	andGateB->SetNodeName("Internal");
+	orGate->SetNodeName("Internal");
+	
 	
 	AdderSceneComponent = CreateDefaultSubobject<USceneComponent>("Adder SceneComponent");
 	RootComponent = AdderSceneComponent;
@@ -53,12 +60,18 @@ AFullAdder::AFullAdder()
 	CableConnectorCarry->SetupAttachment(OutputPortCarry);
 	
 	OutputCableX = CreateDefaultSubobject<UCableComponent>("AdderOutputCableX");
-	OutputCableX->AttachToComponent(CableConnector, FAttachmentTransformRules::KeepWorldTransform);
+	//OutputCableX->AttachToComponent(CableConnector, FAttachmentTransformRules::KeepWorldTransform);
+
+	OutputCableX->SetupAttachment(CableConnector);
+	
 	OutputCableX->SetAttachEndTo(this, "Cable Component"); // Why the space, I wish I knew...
 	// TODO: Why is this Cable Component and not Cable Connector? 
 	
 	OutputCableY = CreateDefaultSubobject<UCableComponent>("AdderOutputCableY");
-	OutputCableY->AttachToComponent(CableConnectorCarry, FAttachmentTransformRules::KeepWorldTransform);
+	//OutputCableY->AttachToComponent(CableConnectorCarry, FAttachmentTransformRules::KeepWorldTransform);
+
+	OutputCableY->SetupAttachment(CableConnectorCarry);
+
 	OutputCableY->SetAttachEndTo(this, "Cable Connector Carry"); // Why the space, I wish I knew...
 
 	carryOutNode->SetOutputCableX(OutputCableY);
@@ -349,6 +362,22 @@ FString AFullAdder::SerializeNode()
 	//TArray<TSharedPtr<FJsonValue>> connectedNodesArray;
 	//TArray<TSharedPtr<FJsonValue>> observersArray;
 
+	// Create a JSON array to store node entries
+	TArray<TSharedPtr<FJsonValue>> connectionsArray;
+	
+
+	for (const auto& Pair : GetConnectionSerializationArray())
+	{
+		// Create a JSON object for each node
+		TSharedPtr<FJsonObject> NodeObject = MakeShareable(new FJsonObject);
+		NodeObject->SetNumberField(TEXT("serialNumber"), Pair.Key);
+		NodeObject->SetStringField(TEXT("xOrY"), Pair.Value);
+
+		// Add the node object to the array
+		TSharedPtr<FJsonValueObject> NodeJsonValue = MakeShareable(new FJsonValueObject(NodeObject));
+		connectionsArray.Add(NodeJsonValue);
+	}
+
 	// TODO: Add and implement connections array with pairs of key sttring
 	// could do something like outx,inx but for now is implemented
 	// elsewhere as inx and iny for example
@@ -377,15 +406,7 @@ FString AFullAdder::SerializeNode()
 
 	RootObject->SetObjectField(TEXT("position"), PositionObject);
 	RootObject->SetObjectField(TEXT("rotation"), RotationObject);
-
-	/*
-	 * TODO: implement cable serialization. I will need to essentially serialize
-	 * the serialNumber of the endpoint node, and the string for the component name.
-	 * We can use the observers map, with the stored key, to populate the SetEndpoint finctiom
-	 * of the cable (during deserialization)
-	 *
-	 * TODO: save the input key, during the SetInput 
-	 */
+	RootObject->SetArrayField(TEXT("connections"), connectionsArray);
 	
 	// Create a writer and write JSON to string
 	FString OutputString;
@@ -400,7 +421,7 @@ void AFullAdder::SetupMeshes()
 
 	// TODO: Remove log statements below...
 	static ConstructorHelpers::FObjectFinder<UStaticMesh>
-	ConnectionAsset(TEXT("StaticMesh'/Game/LogicGates/LogicGates/Mesh_Connection'"));
+	ConnectionAsset(TEXT("StaticMesh'/Game/LogicGates/LogicGates/Meshes/Mesh_Connection'"));
 	if (ConnectionAsset.Succeeded())
 	{
 		InputPortX->SetStaticMesh(ConnectionAsset.Object);
@@ -416,7 +437,7 @@ void AFullAdder::SetupMeshes()
 	}
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh>
-	FullAdderAsset(TEXT("StaticMesh'/Game/LogicGates/LogicGates/Mesh_FullAdder'"));
+	FullAdderAsset(TEXT("StaticMesh'/Game/LogicGates/LogicGates/Meshes/Mesh_FullAdder'"));
 	if (FullAdderAsset.Succeeded())
 	{
 		DisplayMesh->SetStaticMesh(FullAdderAsset.Object);

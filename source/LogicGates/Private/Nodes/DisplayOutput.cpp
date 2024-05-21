@@ -53,7 +53,10 @@
 
  	//OutputCableX = nullptr; // Display has NO output cable!!!
  	OutputCableX = CreateDefaultSubobject<UCableComponent>("DisplayConnected");
-    OutputCableX->AttachToComponent(CableConnector, FAttachmentTransformRules::KeepWorldTransform);
+    //OutputCableX->AttachToComponent(CableConnector, FAttachmentTransformRules::KeepWorldTransform);
+
+ 	OutputCableX->SetupAttachment(CableConnector);
+	
  	OutputCableX->SetAttachEndToComponent(CableConnector);
  	OutputCableX->SetupAttachment(RootComponent);
  	OutputCableX->SetVisibility(false);
@@ -187,7 +190,7 @@ FString ADisplayOutput::SerializeNode()
 void ADisplayOutput::SetupMeshes()
 {
 	static ConstructorHelpers::FObjectFinder<UStaticMesh>
-	DisplayAsset(TEXT("StaticMesh'/Game/LogicGates/LogicGates/Mesh_Display'"));
+	DisplayAsset(TEXT("StaticMesh'/Game/LogicGates/LogicGates/Meshes/Mesh_Display'"));
 	if (DisplayAsset.Succeeded())
 	{
 		DisplayMesh->SetStaticMesh(DisplayAsset.Object);
@@ -199,7 +202,7 @@ void ADisplayOutput::SetupMeshes()
 	}
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh>
-	ScreenAsset(TEXT("StaticMesh'/Game/LogicGates/LogicGates/Mesh_Screen'"));	
+	ScreenAsset(TEXT("StaticMesh'/Game/LogicGates/LogicGates/Meshes/Mesh_Screen'"));	
 	if (ScreenAsset.Succeeded())
 	{
 		ScreenMesh->SetStaticMesh(ScreenAsset.Object);
@@ -211,7 +214,7 @@ void ADisplayOutput::SetupMeshes()
 	}
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh>
-	ConnectionAsset(TEXT("StaticMesh'/Game/LogicGates/LogicGates/Mesh_Connection'"));
+	ConnectionAsset(TEXT("StaticMesh'/Game/LogicGates/LogicGates/Meshes/Mesh_Connection'"));
 	if (ConnectionAsset.Succeeded())
 	{
 		InputPort->SetStaticMesh(ConnectionAsset.Object);

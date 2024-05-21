@@ -9,7 +9,7 @@ AXorGate::AXorGate()
     
 	// Set Mesh for AndGate
 	static ConstructorHelpers::FObjectFinder<UStaticMesh>
-	AndGateAsset(TEXT("StaticMesh'/Game/LogicGates/LogicGates/Mesh_XorGate'"));
+	AndGateAsset(TEXT("StaticMesh'/Game/LogicGates/LogicGates/Meshes/Mesh_XorGate'"));
 	if (AndGateAsset.Succeeded())
 	{
 		DisplayMesh->SetStaticMesh(AndGateAsset.Object);

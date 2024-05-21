@@ -69,16 +69,19 @@ public:
 
 	eLogicState GetState() const;
 
+	UFUNCTION(BlueprintCallable)
 	bool GetFromOutputY() const
 	{
 		return fromOutputY;
 	}
+	
+	UFUNCTION(BlueprintCallable)
 	void SetFromOutputY(bool outputY)
 	{
 		fromOutputY = outputY;
 	}
 
-	virtual FString SerializeNode() override;
+	FString SerializeNode() override;
 	
 protected:
 

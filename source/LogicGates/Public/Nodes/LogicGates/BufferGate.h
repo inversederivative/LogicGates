@@ -15,6 +15,9 @@ class LOGICGATES_API ABufferGate : public AAbstractNode
 	GENERATED_BODY()
 
 public:
+
+	ABufferGate();
+	
 	void SetInput(AAbstractNode* in);
 
 	void Update(eLogicState state) override;

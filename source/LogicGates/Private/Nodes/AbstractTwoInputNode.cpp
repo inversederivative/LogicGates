@@ -31,9 +31,9 @@ AAbstractTwoInputNode::AAbstractTwoInputNode()
 	CableConnector->SetupAttachment(OutputPortX);
 	
 	OutputCableX = CreateDefaultSubobject<UCableComponent>("LogicGateCable");
-	OutputCableX->AttachToComponent(CableConnector, FAttachmentTransformRules::KeepWorldTransform);
+	//OutputCableX->AttachToComponent(CableConnector, FAttachmentTransformRules::KeepWorldTransform);
 	// TODO: Research why SetAttachEndToComponent does NOT work...?
-	//OutputCableX->SetupAttachment(CableConnector);
+	OutputCableX->SetupAttachment(CableConnector);
 	//OutputCableX->SetAttachEndToComponent(CableConnector);
 	OutputCableX->SetAttachEndTo(this, "Cable Component"); // Why the space, I wish I knew...
 
@@ -98,24 +98,6 @@ void AAbstractTwoInputNode::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AA
 	}
 }
 
-// FString AAbstractTwoInputNode::SerializeNode()
-// {
-// 	// Create a JSON object
-// 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
-//
-// 	// Add int and string values to the JSON object
-// 	JsonObject->SetNumberField(TEXT("serialNumber"), GetSerialNumber());
-// 	JsonObject->SetStringField(TEXT("nodeName"), GetNodeName());
-//
-// 	// Create a writer and write JSON to string
-// 	FString OutputString;
-// 	TSharedRef<TJsonWriter<TCHAR>> JsonWriter = TJsonWriterFactory<>::Create(&OutputString);
-// 	FJsonSerializer::Serialize(JsonObject.ToSharedRef(), JsonWriter);
-//
-// 	return OutputString;
-// }
-
-
 FString AAbstractTwoInputNode::SerializeNode()
 {
 	// Create a JSON array to store node entries
@@ -179,25 +161,18 @@ FString AAbstractTwoInputNode::SerializeNode()
 
 void AAbstractTwoInputNode::ResetConnectionsArray()
 {
-	//ConnectionSerializationArray = {};
-
-	int index = 0;
 	TArray<FKeyValuePair> tempArray;
-	for (auto output : GetObservers())
+
+	for (int x = 0; x < GetObservers().Num(); x++)
 	{
-		while (index < GetObservers().size())
+		auto absNode = Cast<AAbstractNode>(GetObservers()[x].Value);
+		int oldSerial = absNode->GetDeserializationNumber();
+		FKeyValuePair pair;
+		if (ConnectionSerializationArray[x].Key == oldSerial)
 		{
-			auto absNode = Cast<AAbstractNode>(output);
-			int oldSerial = absNode->GetDeserializationNumber();
-			FKeyValuePair pair;
-			
-			if (ConnectionSerializationArray[index].Key == oldSerial)
-			{
-				pair.Key = absNode->GetSerialNumber();
-				pair.Value = ConnectionSerializationArray[index].Value;
-				tempArray.Add(pair);
-			}
-			index++;
+			pair.Key = absNode->GetSerialNumber();
+			pair.Value = ConnectionSerializationArray[x].Value;
+			tempArray.Add(pair);
 		}
 	}
 	SetConnectionSerializationArray(tempArray);
@@ -223,7 +198,7 @@ void AAbstractTwoInputNode::SetupMeshes()
 	// }
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh>
-	ConnectionAsset(TEXT("StaticMesh'/Game/LogicGates/LogicGates/Mesh_Connection'"));
+	ConnectionAsset(TEXT("StaticMesh'/Game/LogicGates/LogicGates/Meshes/Mesh_Connection'"));
 	if (ConnectionAsset.Succeeded())
 	{
 		InputPortX->SetStaticMesh(ConnectionAsset.Object);

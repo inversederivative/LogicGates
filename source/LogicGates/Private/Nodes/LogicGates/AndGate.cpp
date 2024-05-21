@@ -8,7 +8,7 @@ AAndGate::AAndGate()
     
 	// Set Mesh for AndGate
 	static ConstructorHelpers::FObjectFinder<UStaticMesh>
-	AndGateAsset(TEXT("StaticMesh'/Game/LogicGates/LogicGates/Mesh_AndGate'"));
+	AndGateAsset(TEXT("StaticMesh'/Game/LogicGates/LogicGates/Meshes/Mesh_AndGate'"));
 	if (AndGateAsset.Succeeded())
 	{
 		DisplayMesh->SetStaticMesh(AndGateAsset.Object);

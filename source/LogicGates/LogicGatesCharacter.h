@@ -113,10 +113,12 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	AAbstractNode* DeserializeNode(FString nodeJson);
-	
+
+	// Not implemented
 	AAbstractNode* DeserializeNodeFromJsonObject(const TSharedPtr<FJsonObject>& NodeJsonObject);
 
-	
+	UFUNCTION(BlueprintCallable)
+	TArray<FString> GetSavedFiles(const FString& directoryPath);
 	
 	UFUNCTION(BlueprintCallable)
 	TMap<int, AAbstractNode*> DeserializeAllNodes(FString fullJson);

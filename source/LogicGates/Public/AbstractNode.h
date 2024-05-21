@@ -25,6 +25,18 @@ struct FKeyValuePair
 	FString Value;
 };
 
+USTRUCT(BlueprintType)
+struct FKeyValueNode
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "KeyValue")
+	int32 Key;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "KeyValue")
+	AAbstractNode* Value;
+};
+
 UCLASS(Blueprintable)
 class LOGICGATES_API AAbstractNode : public AActor, public ISubject, public IObserver
 {
@@ -59,7 +71,12 @@ public:
 	 * @param observer 
 	 */
 	void Attach(IObserver *observer) override {
-		observers_.push_back(observer);
+		auto absNode = Cast<AAbstractNode>(observer);
+		FKeyValueNode node;
+		node.Key = absNode->SerialNumber;
+		node.Value = absNode;
+		observers_.Add(node);
+		//observers_.push_back(observer);
 		//observersMap_.Add(Cast<AAbstractNode>(observer)->GetSerialNumber(), observer);
 		
 	}
@@ -70,7 +87,16 @@ public:
 	 * @param observer 
 	 */
 	void Detach(IObserver *observer) override{
-		observers_.remove(observer);
+		//observers_.Remove()
+		auto absNode = Cast<AAbstractNode>(observer);
+		
+		for (int x = 0; x < observers_.Num(); x++)
+		{
+			if (observers_[x].Key == absNode->SerialNumber)
+			{
+				observers_.RemoveAt(x);
+			}
+		}
 		//observersMap_.Remove(Cast<AAbstractNode>(observer)->GetSerialNumber());
 	}
 
@@ -84,7 +110,7 @@ public:
 		// }
 		for (auto observer : observers_) //observersMap_)
 		{
-			observer->Update(GetState());
+			observer.Value->Update(GetState());
 		}
 	}
 
@@ -110,7 +136,12 @@ public:
 		OutputCableY = cable;
 	}
 	
-	std::list<IObserver*> GetObservers()
+	// std::list<IObserver*> GetObservers()
+	// {
+	// 	return observers_;
+	// }
+
+	TArray<FKeyValueNode> GetObservers()
 	{
 		return observers_;
 	}
@@ -361,7 +392,8 @@ public:
 	
 protected:
 
-	std::list<IObserver*> observers_;
+	//std::list<IObserver*> observers_;
+	TArray<FKeyValueNode> observers_;
 	std::list<IObserver*> connectedNodes_;
 
 	//TMap<int, IObserver*> observersMap_;

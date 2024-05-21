@@ -30,7 +30,10 @@ ATriStateBufferGate::ATriStateBufferGate()
 	CableConnector->SetupAttachment(OutputPortX);
 
 	OutputCableX = CreateDefaultSubobject<UCableComponent>(TEXT("TriStateBufferGate"));
-	OutputCableX->AttachToComponent(CableConnector, FAttachmentTransformRules::KeepWorldTransform);
+	//OutputCableX->AttachToComponent(CableConnector, FAttachmentTransformRules::KeepWorldTransform);
+
+	OutputCableX->SetupAttachment(CableConnector);
+	
 	OutputCableX->SetAttachEndTo(this, "Cable Connector");
 
 	SetCableConnectNumber(GetSerialNumber());
@@ -69,7 +72,7 @@ void ATriStateBufferGate::BeginPlay()
 void ATriStateBufferGate::SetupMeshes()
 {
 	static ConstructorHelpers::FObjectFinder<UStaticMesh>
-	AndGateAsset(TEXT("StaticMesh'/Game/LogicGates/LogicGates/Mesh_TriStateBufferGate'"));
+	AndGateAsset(TEXT("StaticMesh'/Game/LogicGates/LogicGates/Meshes/Mesh_TriStateBufferGate'"));
 	if (AndGateAsset.Succeeded())
 	{
 		DisplayMesh->SetStaticMesh(AndGateAsset.Object);
@@ -81,7 +84,7 @@ void ATriStateBufferGate::SetupMeshes()
 	}
 	
 	static ConstructorHelpers::FObjectFinder<UStaticMesh>
-	ConnectionAsset(TEXT("StaticMesh'/Game/LogicGates/LogicGates/Mesh_Connection'"));
+	ConnectionAsset(TEXT("StaticMesh'/Game/LogicGates/LogicGates/Meshes/Mesh_Connection'"));
 	if (ConnectionAsset.Succeeded())
 	{
 		InputPortData->SetStaticMesh(ConnectionAsset.Object);

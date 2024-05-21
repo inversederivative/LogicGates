@@ -3,7 +3,7 @@
 
 #include "Nodes/PowerSource.h"
 
-#include "NavigationSystemTypes.h"
+//#include "NavigationSystemTypes.h"
 #include "LogicGates/LogicGatesCharacter.h"
 
 APowerSource::APowerSource()
@@ -32,7 +32,10 @@ APowerSource::APowerSource()
 	
 	OutputCableX = CreateDefaultSubobject<UCableComponent>(TEXT("PowerSource Output"));
 	// Attach To Component comes from the USceneComponent class. 
-	OutputCableX->AttachToComponent(CableConnector, FAttachmentTransformRules::KeepWorldTransform);
+	//OutputCableX->AttachToComponent(CableConnector, FAttachmentTransformRules::KeepWorldTransform);
+
+	OutputCableX->SetupAttachment(CableConnector);
+
 	// Setup Cable's Initial End Location
 	// NOTE: We have to add the space, because the component automatically has a space in the engine.
 	//      May as well name with spaces as well, but that's for later. ????????
@@ -218,30 +221,22 @@ FString APowerSource::SerializeNode()
 
 void APowerSource::ResetConnectionsArray()
 {
-	//ConnectionSerializationArray = {};
-
-	int index = 0;
 	TArray<FKeyValuePair> tempArray;
-	for (auto output : GetObservers())
+
+	for (int x = 0; x < GetObservers().Num(); x++)
 	{
-		while (index < GetObservers().size())
+		auto absNode = Cast<AAbstractNode>(GetObservers()[x].Value);
+		int oldSerial = absNode->GetDeserializationNumber();
+		FKeyValuePair pair;
+		if (ConnectionSerializationArray[x].Key == oldSerial)
 		{
-			auto absNode = Cast<AAbstractNode>(output);
-			int oldSerial = absNode->GetDeserializationNumber();
-			FKeyValuePair pair;
-			
-			if (ConnectionSerializationArray[index].Key == oldSerial)
-			{
-				pair.Key = absNode->GetSerialNumber();
-				pair.Value = ConnectionSerializationArray[index].Value;
-				tempArray.Add(pair);
-			}
-			index++;
+			pair.Key = absNode->GetSerialNumber();
+			pair.Value = ConnectionSerializationArray[x].Value;
+			tempArray.Add(pair);
 		}
 	}
 	SetConnectionSerializationArray(tempArray);
 }
-
 void APowerSource::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
                                   UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
                                   const FHitResult& SweepResult)
@@ -273,7 +268,7 @@ void APowerSource::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* Oth
 void APowerSource::SetupMeshes()
 {
 	static ConstructorHelpers::FObjectFinder<UStaticMesh>
-	PowerSourceAsset(TEXT("StaticMesh'/Game/LogicGates/LogicGates/Mesh_PowerSource'"));
+	PowerSourceAsset(TEXT("StaticMesh'/Game/LogicGates/LogicGates/Meshes/Mesh_PowerSource'"));
 	if (PowerSourceAsset.Succeeded())
 	{
 		PowerSourceMesh->SetStaticMesh(PowerSourceAsset.Object);
@@ -285,7 +280,7 @@ void APowerSource::SetupMeshes()
 	}
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh>
-	ButtonAsset(TEXT("StaticMesh'/Game/LogicGates/LogicGates/Mesh_Button'"));	
+	ButtonAsset(TEXT("StaticMesh'/Game/LogicGates/LogicGates/Meshes/Mesh_Button'"));	
 	if (ButtonAsset.Succeeded())
 	{
 		ButtonMesh->SetStaticMesh(ButtonAsset.Object);
@@ -297,7 +292,7 @@ void APowerSource::SetupMeshes()
 	}
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh>
-	ConnectionAsset(TEXT("StaticMesh'/Game/LogicGates/LogicGates/Mesh_Connection'"));
+	ConnectionAsset(TEXT("StaticMesh'/Game/LogicGates/LogicGates/Meshes/Mesh_Connection'"));
 	if (ConnectionAsset.Succeeded())
 	{
 		ConnectionMesh->SetStaticMesh(ConnectionAsset.Object);

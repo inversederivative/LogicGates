@@ -3,6 +3,11 @@
 
 #include "Nodes/LogicGates/BufferGate.h"
 
+ABufferGate::ABufferGate()
+{
+	SetNodeName("BufferGate");
+}
+
 void ABufferGate::SetInput(AAbstractNode* in)
 {
 	input = in;
