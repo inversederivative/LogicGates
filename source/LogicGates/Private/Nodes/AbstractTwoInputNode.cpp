@@ -163,7 +163,7 @@ void AAbstractTwoInputNode::ResetConnectionsArray()
 {
 	TArray<FKeyValuePair> tempArray;
 
-	for (int x = 0; x < GetObservers().Num(); x++)
+	for (int x = 0; x < GetConnectionSerializationArray().Num(); x++)
 	{
 		auto absNode = Cast<AAbstractNode>(GetObservers()[x].Value);
 		int oldSerial = absNode->GetDeserializationNumber();

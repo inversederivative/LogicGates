@@ -264,6 +264,10 @@ AAbstractNode* ALogicGatesCharacter::DeserializeNode(FString nodeJson)
     {
     	NewNode = NewObject<AOrGate>();
     }
+	else if (NodeName == "FullAdder")
+	{
+		NewNode = NewObject<AFullAdder>();
+	}
 	
 if (NewNode)
     {

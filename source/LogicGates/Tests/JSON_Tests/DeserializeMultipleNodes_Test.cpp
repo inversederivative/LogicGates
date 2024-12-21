@@ -1,11 +1,12 @@
 ﻿//#include "AITestsCommon.h"
+#include "LogicGates/Tests/AutomationFlags.h" // AUTO_FLAGS
 #include "LogicGates/LogicGatesCharacter.h"
 #include "Nodes/DisplayOutput.h"
 #include "Nodes/PowerSource.h"
 
 #include "Nodes/LogicGates/AndGate.h"
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(DeserializeMultipleNodes_Test, "LogicGates.DeserializeMultipleNodes_Test", EAutomationTestFlags::ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(DeserializeMultipleNodes_Test, "LogicGates.DeserializeMultipleNodes_Test",AUTO_FLAGS)
 
 bool DeserializeMultipleNodes_Test::RunTest(const FString& Parameters)
 {

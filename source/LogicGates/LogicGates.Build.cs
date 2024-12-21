@@ -1,5 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
+using System.Collections.Generic;
 using UnrealBuildTool;
 
 public class LogicGates : ModuleRules

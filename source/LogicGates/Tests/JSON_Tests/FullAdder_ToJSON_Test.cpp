@@ -1,8 +1,10 @@
-﻿#include "Nodes/DisplayOutput.h"
+﻿#include "LogicGates/Tests/AutomationFlags.h" // AUTO_FLAGS
+#include "Nodes/DisplayOutput.h"
 #include "Nodes/PowerSource.h"
 #include "Nodes/Adders/FullAdder.h"
 #include "Nodes/LogicGates/AndGate.h"
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FullAdder_ToJSON_Test, "LogicGates.FullAdder_ToJSON_Test", EAutomationTestFlags::ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FullAdder_ToJSON_Test, "LogicGates.FullAdder_ToJSON_Test", AUTO_FLAGS)
 
 
 bool FullAdder_ToJSON_Test::RunTest(const FString& Parameters)

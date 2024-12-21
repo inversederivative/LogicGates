@@ -44,7 +44,7 @@ AFullAdder::AFullAdder()
 	InputPortX->SetupAttachment(RootComponent);
 	InputPortY = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("InputPortY"));
 	InputPortY->SetupAttachment(RootComponent);
-	InputPortZ = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("InputPortZ"));
+	InputPortZ = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("InputPortCarry"));
 	InputPortZ->SetupAttachment(RootComponent);
 
 	OutputPortX = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("OutputPortX"));
@@ -207,12 +207,12 @@ void AFullAdder::SetInputCarry(AAbstractNode* input)
 	{
 		inputCarry = fullAdder->GetCarryOutNode();
 		inputCarry->SetOutputCableX(fullAdder->GetOutputCableY());
-		inputCarry->GetOutputCableX()->SetAttachEndTo(this, "InputPortZ");
+		inputCarry->GetOutputCableX()->SetAttachEndTo(this, "InputPortCarry"); //InputPortZ does not work
 	}
 	else
 	{
 		inputCarry = input;
-		inputCarry->GetOutputCableX()->SetAttachEndTo(this, "InputPortZ");
+		inputCarry->GetOutputCableX()->SetAttachEndTo(this, "InputPortCarry"); //InputPortZ does not work
 	}
 	
 	input->Attach(this);

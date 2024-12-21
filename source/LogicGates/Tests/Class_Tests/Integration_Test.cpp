@@ -2,7 +2,9 @@
 #include "Nodes/DisplayOutput.h"
 #include "Nodes/LogicGates/AndGate.h"
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(Integration_Test, "LogicGates.Integration_Test", EAutomationTestFlags::ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+#define AUTO_FLAGS (EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(Integration_Test, "LogicGates.Integration_Test", AUTO_FLAGS)
 
 
 bool Integration_Test::RunTest(const FString& Parameters)
